@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1B2430">
-<title>Reparto de roles · Among Us</title>
+<title>Reparto de roles</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -318,7 +318,7 @@ function refreshFile(){
   ['download','downloadDone'].forEach(id => {
     const a = $(id);
     a.href = blobUrl;
-    a.setAttribute('download', 'among-us-rondas-' + stamp + '.txt');
+    a.setAttribute('download', 'reparto-rondas-' + stamp + '.txt');
   });
   $('downloadDone').hidden = !history.length;
 }
@@ -548,7 +548,7 @@ function openResults(){
 
 /* ---------- exportar ---------- */
 function buildText(){
-  const lines = ['AMONG US · HISTORIAL DE RONDAS', 'Generado el ' + fmt(Date.now()), ''];
+  const lines = ['HISTORIAL DE RONDAS', 'Generado el ' + fmt(Date.now()), ''];
   history.forEach((r, i) => {
     lines.push('RONDA ' + (i + 1) + ' — ' + fmt(r.ts));
     lines.push(r.players + ' jugadores · ' + r.impostors + ' impostores');
@@ -559,7 +559,7 @@ function buildText(){
 }
 
 $('download').addEventListener('click', () => {
-  $('status').textContent = 'Descargando among-us-rondas.txt. Si tu navegador lo bloquea, usa Copiar o Ver texto.';
+  $('status').textContent = 'Descargando reparto-rondas.txt. Si tu navegador lo bloquea, usa Copiar o Ver texto.';
 });
 
 $('showText').addEventListener('click', () => {
