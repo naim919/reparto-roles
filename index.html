@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1B2430">
+<title>Reparto de roles · Among Us</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --hull:#1B2430;
+  --panel:#253244;
+  --line:#3A4A60;
+  --ceramic:#E8E4DA;
+  --amber:#F2A13B;
+  --coolant:#2E9E92;
+  --coolant-deep:#0E6B63;
+  --alert:#B32626;
+  --display:'Big Shoulders Display','Arial Narrow',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--hull);
+  color:var(--ceramic);
+  font-family:var(--mono);
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+
+.screen{
+  position:fixed;inset:0;
+  display:none;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 22px) 22px calc(env(safe-area-inset-bottom) + 22px);
+  max-width:560px;margin:0 auto;
+}
+.screen.is-active{display:flex}
+
+.eyebrow{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--amber);font-weight:600}
+.rule{height:1px;background:var(--line);margin-top:14px}
+.hatch{height:10px;margin-top:10px;background:repeating-linear-gradient(-45deg,var(--amber) 0 8px,transparent 8px 18px);opacity:.55}
+
+h1{font-family:var(--display);font-weight:900;font-size:clamp(40px,13vw,68px);line-height:.86;text-transform:uppercase;margin-top:12px}
+h1 span{display:block;color:var(--amber)}
+
+.scroller{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:14px;padding:18px 0}
+
+.stepper{background:var(--panel);border:1px solid var(--line);padding:14px 16px}
+.stepper-head{display:flex;justify-content:space-between;align-items:baseline}
+.stepper-label{font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.stepper-cap{font-size:11px;color:#8D9BB0}
+.stepper-row{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.stepper-val{font-family:var(--display);font-weight:700;font-size:58px;line-height:1;min-width:2ch;text-align:center;font-variant-numeric:tabular-nums}
+.bump{width:52px;height:52px;border:1px solid var(--line);font-family:var(--display);font-size:32px;font-weight:700;display:grid;place-items:center;background:#1B2430;transition:background .12s ease}
+.bump:active{background:var(--amber);color:var(--hull);border-color:var(--amber)}
+.bump[disabled]{opacity:.25;cursor:not-allowed}
+.bump[disabled]:active{background:#1B2430;color:inherit;border-color:var(--line)}
+
+.note{font-size:12px;color:#8D9BB0;line-height:1.5}
+.note b{color:var(--ceramic);font-weight:500}
+
+.names-head{display:flex;justify-content:space-between;align-items:baseline}
+.names{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.name-row{display:flex;align-items:stretch;border:1px solid var(--line);background:var(--panel)}
+.name-idx{width:44px;flex:none;display:grid;place-items:center;font-family:var(--display);font-size:24px;font-weight:700;color:var(--amber);border-right:1px solid var(--line)}
+.name-row input{flex:1;min-width:0;background:none;border:none;padding:13px 12px;font-size:15px}
+.name-row input::placeholder{color:#5F708A}
+
+.cta{width:100%;padding:20px;background:var(--amber);color:var(--hull);font-family:var(--display);font-weight:900;font-size:30px;text-transform:uppercase;line-height:1}
+.cta:active{transform:translateY(2px)}
+.ghost{width:100%;padding:15px;border:1px solid var(--line);font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+.ghost[disabled]{opacity:.35;cursor:not-allowed}
+.stack{display:flex;flex-direction:column;gap:10px}
+.pair{display:flex;gap:10px}
+.pair .ghost{flex:1}
+
+#pass{justify-content:space-between;text-align:center}
+.pass-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.pass-of{font-size:12px;letter-spacing:.2em;color:#8D9BB0;text-transform:uppercase}
+.pass-name{font-family:var(--display);font-weight:900;font-size:clamp(46px,17vw,92px);line-height:.9;text-transform:uppercase;margin-top:8px;overflow-wrap:anywhere}
+.pass-instr{font-size:14px;color:#8D9BB0;line-height:1.6;max-width:24ch;margin:22px auto 0}
+
+.hold{position:relative;width:100%;padding:22px;overflow:hidden;border:1px solid var(--amber);color:var(--amber);font-family:var(--display);font-weight:700;font-size:26px;text-transform:uppercase;line-height:1}
+.hold-fill{position:absolute;inset:0 100% 0 0;background:var(--amber);transition:right .6s linear}
+.hold.is-holding .hold-fill{right:0}
+.hold-txt{position:relative;mix-blend-mode:difference}
+
+#reveal{padding:0;max-width:none;justify-content:center;align-items:center;text-align:center}
+#reveal.crew{background:var(--coolant-deep)}
+#reveal.imp{background:var(--alert)}
+.gauge{position:absolute;top:calc(env(safe-area-inset-top) + 18px);left:22px;right:22px;display:flex;gap:3px;height:8px}
+.seg{flex:1;background:rgba(232,228,218,.9);transition:opacity .18s linear}
+.seg.off{opacity:.16}
+.role-wrap{padding:0 20px}
+.role-kicker{font-size:12px;letter-spacing:.3em;text-transform:uppercase;opacity:.75;overflow-wrap:anywhere}
+.role{font-family:var(--display);font-weight:900;font-size:clamp(60px,22vw,132px);line-height:.82;text-transform:uppercase;margin:10px 0 14px}
+.role-sub{font-size:14px;line-height:1.6;opacity:.85;max-width:26ch;margin:0 auto}
+.partners{margin-top:20px;border-top:1px solid rgba(232,228,218,.35);padding-top:14px;font-size:13px}
+.partners b{display:block;font-family:var(--display);font-size:28px;font-weight:700;margin-top:4px;overflow-wrap:anywhere}
+.tick{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 20px);font-family:var(--display);font-size:52px;font-weight:700;opacity:.5}
+
+#done{justify-content:space-between}
+.done-mid{flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.tally{display:flex;gap:12px}
+.tally-box{flex:1;border:1px solid var(--line);background:var(--panel);padding:14px}
+.tally-n{font-family:var(--display);font-weight:900;font-size:46px;line-height:1}
+.tally-l{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8D9BB0;margin-top:2px}
+
+.warn{border:1px solid var(--alert);background:rgba(179,38,38,.14);padding:16px;font-size:13px;line-height:1.6}
+.warn b{color:var(--amber)}
+.round{border:1px solid var(--line)}
+.round-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;background:var(--panel);padding:10px 14px;border-bottom:1px solid var(--line)}
+.round-n{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em}
+.round-when{font-size:11px;color:#8D9BB0}
+.round-body{display:flex;flex-direction:column}
+.result-row{display:flex;align-items:center;gap:12px;border-left:4px solid var(--coolant);padding:11px 14px;border-bottom:1px solid rgba(58,74,96,.5)}
+.round-body .result-row:last-child{border-bottom:none}
+.result-row.is-imp{border-left-color:var(--alert);background:rgba(179,38,38,.16)}
+.result-name{flex:1;min-width:0;font-size:15px;overflow-wrap:anywhere}
+.result-tag{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8D9BB0;flex:none}
+.result-row.is-imp .result-tag{color:#FF9A9A;font-weight:600}
+.status{font-size:12px;color:var(--amber);min-height:1.2em}
+a.ghost{display:block;text-align:center;text-decoration:none}
+a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
+.dump{
+  background:#141C26;border:1px solid var(--line);padding:14px;
+  font-family:var(--mono);font-size:12px;line-height:1.6;
+  white-space:pre-wrap;overflow-wrap:anywhere;
+  max-height:45vh;overflow:auto;user-select:text;-webkit-user-select:text;
+}
+.empty{font-size:13px;color:#8D9BB0;line-height:1.6}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms !important}
+  .hold-fill{transition:right .6s linear}
+}
+</style>
+</head>
+<body>
+
+<!-- 1 · AJUSTES -->
+<section class="screen is-active" id="setup">
+  <div>
+    <p class="eyebrow">Reparto de roles · pásate el móvil</p>
+    <h1>Entre<br>nosotros<span>hay uno</span></h1>
+    <div class="hatch"></div>
+  </div>
+
+  <div class="scroller">
+    <div class="stepper">
+      <div class="stepper-head">
+        <span class="stepper-label">Jugadores</span>
+        <span class="stepper-cap">3 – 15</span>
+      </div>
+      <div class="stepper-row">
+        <button class="bump" data-act="p-">–</button>
+        <span class="stepper-val" id="valPlayers">8</span>
+        <button class="bump" data-act="p+">+</button>
+      </div>
+    </div>
+
+    <div class="stepper">
+      <div class="stepper-head">
+        <span class="stepper-label">Impostores</span>
+        <span class="stepper-cap" id="capImp">máx. 3</span>
+      </div>
+      <div class="stepper-row">
+        <button class="bump" data-act="i-">–</button>
+        <span class="stepper-val" id="valImpostors">2</span>
+        <button class="bump" data-act="i+">+</button>
+      </div>
+    </div>
+
+    <p class="note" id="note"></p>
+    <button class="ghost" id="testRandom">Probar aleatoriedad · 10.000 repartos</button>
+    <div class="dump" id="testOut" hidden></div>
+
+    <div>
+      <div class="names-head">
+        <span class="stepper-label">Nombres</span>
+        <span class="stepper-cap">opcional</span>
+      </div>
+      <div class="names" id="names"></div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <button class="cta" id="start">Repartir</button>
+    <button class="ghost" id="setupToResults">Historial de rondas</button>
+  </div>
+</section>
+
+<!-- 2 · PASA EL MÓVIL -->
+<section class="screen" id="pass">
+  <div>
+    <p class="eyebrow" id="passEyebrow">Turno 1 de 8</p>
+    <div class="rule"></div>
+  </div>
+  <div class="pass-mid">
+    <span class="pass-of">Le toca a</span>
+    <span class="pass-name" id="passName">Jugador 1</span>
+    <p class="pass-instr">Coge el móvil tú solo. Cuando nadie más mire, mantén pulsado.</p>
+  </div>
+  <button class="hold" id="hold">
+    <span class="hold-fill"></span>
+    <span class="hold-txt">Mantén pulsado</span>
+  </button>
+</section>
+
+<!-- 3 · REVELADO -->
+<section class="screen" id="reveal">
+  <div class="gauge" id="gauge"></div>
+  <div class="role-wrap">
+    <p class="role-kicker" id="roleKicker">Jugador 1</p>
+    <p class="role" id="roleName">Tripulante</p>
+    <p class="role-sub" id="roleSub"></p>
+    <div class="partners" id="partners" hidden></div>
+  </div>
+  <span class="tick" id="tick">3</span>
+</section>
+
+<!-- 4 · FIN DEL REPARTO -->
+<section class="screen" id="done">
+  <div>
+    <p class="eyebrow">Reparto completado</p>
+    <h1>A la<br><span>nave</span></h1>
+    <div class="hatch"></div>
+  </div>
+
+  <div class="done-mid">
+    <div class="tally">
+      <div class="tally-box">
+        <div class="tally-n" id="tallyCrew">6</div>
+        <div class="tally-l">Tripulantes</div>
+      </div>
+      <div class="tally-box">
+        <div class="tally-n" id="tallyImp">2</div>
+        <div class="tally-l">Impostores</div>
+      </div>
+    </div>
+    <p class="note" id="doneNote"></p>
+  </div>
+
+  <div class="stack">
+    <a class="ghost dl" id="downloadDone" download="rondas.txt" href="#">Descargar .txt de las rondas</a>
+    <button class="ghost" id="toResults">Ver resultados</button>
+    <button class="cta" id="again">Repartir otra vez</button>
+    <button class="ghost" id="reset">Cambiar jugadores</button>
+  </div>
+</section>
+
+<!-- 5 · RESULTADOS -->
+<section class="screen" id="results">
+  <div>
+    <p class="eyebrow" id="resultsEyebrow">Historial de rondas</p>
+    <div class="rule"></div>
+  </div>
+
+  <div class="scroller">
+    <div id="resultsLocked">
+      <div class="warn">Esto enseña <b>quién era impostor</b> en cada ronda. Ábrelo solo cuando la partida haya terminado.</div>
+    </div>
+    <div id="roundList" hidden></div>
+    <pre class="dump" id="dump" hidden></pre>
+  </div>
+
+  <div class="stack">
+    <button class="hold" id="holdResults">
+      <span class="hold-fill"></span>
+      <span class="hold-txt">Mantén pulsado</span>
+    </button>
+    <p class="status" id="status"></p>
+    <div class="stack" id="exportRow" hidden>
+      <a class="ghost dl" id="download" download="rondas.txt" href="#">Descargar .txt</a>
+      <div class="pair">
+        <button class="ghost" id="copy">Copiar</button>
+        <button class="ghost" id="showText">Ver texto</button>
+      </div>
+    </div>
+    <button class="ghost" id="wipe" hidden>Borrar historial</button>
+    <button class="ghost" id="backDone">Volver</button>
+  </div>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let players = 8, impostors = 2;
+let names = [];
+let roles = [], turn = 0, timer = null;
+let history = [];
+let cameFrom = 'done';
+
+const maxImp = p => Math.min(3, Math.max(1, Math.floor((p - 1) / 2)));
+const nameOf = i => (names[i] && names[i].trim()) ? names[i].trim() : 'Jugador ' + (i + 1);
+const esc = s => String(s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('is-active', s.id === id));
+}
+
+/* ---------- fichero de resultados ----------
+   No se guarda nada fuera de este dispositivo: el .txt se genera
+   en el propio móvil y solo existe donde tú lo descargues.        */
+let blobUrl = null;
+
+function refreshFile(){
+  const stamp = new Date().toISOString().slice(0, 10);
+  if (blobUrl) URL.revokeObjectURL(blobUrl);
+  blobUrl = URL.createObjectURL(new Blob([buildText()], {type:'text/plain;charset=utf-8'}));
+  ['download','downloadDone'].forEach(id => {
+    const a = $(id);
+    a.href = blobUrl;
+    a.setAttribute('download', 'among-us-rondas-' + stamp + '.txt');
+  });
+  $('downloadDone').hidden = !history.length;
+}
+
+/* ---------- ajustes ---------- */
+function paintNames(){
+  const box = $('names');
+  box.innerHTML = '';
+  for (let i = 0; i < players; i++){
+    const row = document.createElement('div');
+    row.className = 'name-row';
+    row.innerHTML = '<span class="name-idx">' + (i + 1) + '</span>';
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.maxLength = 18;
+    inp.autocomplete = 'off';
+    inp.placeholder = 'Jugador ' + (i + 1);
+    inp.value = names[i] || '';
+    inp.setAttribute('aria-label', 'Nombre del jugador ' + (i + 1));
+    inp.addEventListener('input', () => { names[i] = inp.value; });
+    row.appendChild(inp);
+    box.appendChild(row);
+  }
+}
+
+function paintSetup(rebuildNames){
+  const mx = maxImp(players);
+  if (impostors > mx) impostors = mx;
+  $('valPlayers').textContent = players;
+  $('valImpostors').textContent = impostors;
+  $('capImp').textContent = 'máx. ' + mx;
+  $('note').innerHTML = 'Con <b>' + players + ' jugadores</b> caben hasta <b>' + mx + ' ' +
+    (mx === 1 ? 'impostor' : 'impostores') + '</b>. Quedan <b>' + (players - impostors) + '</b> tripulantes.';
+  document.querySelector('[data-act="p-"]').disabled = players <= 3;
+  document.querySelector('[data-act="p+"]').disabled = players >= 15;
+  document.querySelector('[data-act="i-"]').disabled = impostors <= 1;
+  document.querySelector('[data-act="i+"]').disabled = impostors >= mx;
+  if (rebuildNames) paintNames();
+}
+
+document.querySelectorAll('.bump').forEach(b => b.addEventListener('click', () => {
+  const a = b.dataset.act;
+  const before = players;
+  if (a === 'p+') players++;
+  if (a === 'p-') players--;
+  if (a === 'i+') impostors++;
+  if (a === 'i-') impostors--;
+  paintSetup(players !== before);
+}));
+
+/* ---------- azar ----------
+   Entero uniforme en [0, n) con getRandomValues y muestreo por rechazo,
+   para no arrastrar el sesgo del módulo ni depender de Math.random.   */
+function rand(n){
+  const cryp = window.crypto || window.msCrypto;
+  if (cryp && cryp.getRandomValues){
+    const limit = Math.floor(4294967296 / n) * n;
+    const buf = new Uint32Array(1);
+    let v;
+    do { cryp.getRandomValues(buf); v = buf[0]; } while (v >= limit);
+    return v % n;
+  }
+  return Math.floor(Math.random() * n);
+}
+
+function shuffle(arr){
+  for (let k = arr.length - 1; k > 0; k--){
+    const j = rand(k + 1);
+    [arr[k], arr[j]] = [arr[j], arr[k]];
+  }
+  return arr;
+}
+
+/* ---------- reparto ---------- */
+function deal(){
+  roles = Array.from({length: players}, (_, i) => ({ i: i, name: nameOf(i), imp: false }));
+  shuffle([...roles]).slice(0, impostors).forEach(r => r.imp = true);
+  turn = 0;
+  lockResults();
+  nextTurn();
+}
+
+function nextTurn(){
+  if (turn >= players){
+    history.push({
+      ts: Date.now(),
+      players: players,
+      impostors: impostors,
+      roles: roles.map(r => ({ name: r.name, imp: r.imp }))
+    });
+    refreshFile();
+    $('tallyCrew').textContent = players - impostors;
+    $('tallyImp').textContent = impostors;
+    paintDoneNote();
+    show('done');
+    return;
+  }
+  $('passEyebrow').textContent = 'Turno ' + (turn + 1) + ' de ' + players;
+  $('passName').textContent = roles[turn].name;
+  show('pass');
+}
+
+function paintDoneNote(){
+  const n = history.length;
+  $('doneNote').innerHTML = 'Llevas <b>' + n + (n === 1 ? ' ronda' : ' rondas') +
+    '</b> en esta sesión. Descarga el .txt antes de cerrar la app: al salir, el historial se pierde.';
+  $('setupToResults').disabled = n === 0;
+}
+
+/* ---------- mantener pulsado ---------- */
+function bindHold(btn, action){
+  let t = null;
+  const end = () => { btn.classList.remove('is-holding'); clearTimeout(t); };
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    btn.classList.add('is-holding');
+    t = setTimeout(() => { end(); action(); }, 600);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev => btn.addEventListener(ev, end));
+}
+
+/* ---------- revelado ---------- */
+const SEGS = 12, TOTAL = 3000;
+
+function reveal(){
+  const me = roles[turn];
+  const scr = $('reveal');
+  scr.classList.toggle('imp', me.imp);
+  scr.classList.toggle('crew', !me.imp);
+
+  $('roleKicker').textContent = me.name;
+  $('roleName').textContent = me.imp ? 'Impostor' : 'Tripulante';
+  $('roleSub').textContent = me.imp
+    ? 'Sabotea, elimina y miente. Que no te pillen.'
+    : 'Completa tus tareas y descubre quién finge hacerlas.';
+
+  const box = $('partners');
+  const mates = roles.filter(r => r.imp && r.i !== me.i).map(r => r.name);
+  if (me.imp && mates.length){
+    box.innerHTML = (mates.length === 1 ? 'Tu compañero es' : 'Tus compañeros son') +
+      '<b>' + esc(mates.join(' · ')) + '</b>';
+    box.hidden = false;
+  } else {
+    box.hidden = true;
+  }
+
+  const gauge = $('gauge');
+  gauge.innerHTML = '';
+  const segs = [];
+  for (let i = 0; i < SEGS; i++){
+    const s = document.createElement('span');
+    s.className = 'seg';
+    gauge.appendChild(s);
+    segs.push(s);
+  }
+
+  show('reveal');
+
+  let step = 0;
+  $('tick').textContent = '3';
+  clearInterval(timer);
+  timer = setInterval(() => {
+    step++;
+    if (segs[SEGS - step]) segs[SEGS - step].classList.add('off');
+    $('tick').textContent = Math.max(1, Math.ceil((SEGS - step) / (SEGS / 3)));
+    if (step >= SEGS){
+      clearInterval(timer);
+      $('roleName').textContent = '';
+      $('roleSub').textContent = '';
+      $('partners').hidden = true;
+      turn++;
+      nextTurn();
+    }
+  }, TOTAL / SEGS);
+}
+
+/* ---------- resultados ---------- */
+function fmt(ts){
+  const d = new Date(ts);
+  return d.toLocaleDateString('es-ES', {day:'2-digit', month:'short'}) + ' · ' +
+         d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+}
+
+function lockResults(){
+  $('resultsLocked').hidden = false;
+  $('roundList').hidden = true;
+  $('holdResults').hidden = false;
+  $('exportRow').hidden = true;
+  $('wipe').hidden = true;
+  $('dump').hidden = true;
+  $('showText').textContent = 'Ver texto';
+  $('status').textContent = '';
+}
+
+function openResults(){
+  const list = $('roundList');
+  list.innerHTML = '';
+
+  if (!history.length){
+    list.innerHTML = '<p class="empty">Todavía no hay rondas guardadas. Reparte una partida y aparecerá aquí.</p>';
+  } else {
+    history.slice().reverse().forEach((r, idx) => {
+      const n = history.length - idx;
+      const card = document.createElement('div');
+      card.className = 'round';
+      const rows = r.roles.map(p =>
+        '<div class="result-row' + (p.imp ? ' is-imp' : '') + '">' +
+          '<span class="result-name">' + esc(p.name) + '</span>' +
+          '<span class="result-tag">' + (p.imp ? 'Impostor' : 'Tripulante') + '</span>' +
+        '</div>').join('');
+      card.innerHTML =
+        '<div class="round-head">' +
+          '<span class="round-n">Ronda ' + n + '</span>' +
+          '<span class="round-when">' + fmt(r.ts) + ' · ' + r.players + ' jug. · ' + r.impostors + ' imp.</span>' +
+        '</div><div class="round-body">' + rows + '</div>';
+      list.appendChild(card);
+    });
+  }
+
+  $('resultsLocked').hidden = true;
+  list.hidden = false;
+  $('holdResults').hidden = true;
+  $('exportRow').hidden = !history.length;
+  $('wipe').hidden = !history.length;
+  refreshFile();
+}
+
+/* ---------- exportar ---------- */
+function buildText(){
+  const lines = ['AMONG US · HISTORIAL DE RONDAS', 'Generado el ' + fmt(Date.now()), ''];
+  history.forEach((r, i) => {
+    lines.push('RONDA ' + (i + 1) + ' — ' + fmt(r.ts));
+    lines.push(r.players + ' jugadores · ' + r.impostors + ' impostores');
+    r.roles.forEach(p => lines.push('  ' + (p.imp ? '[IMPOSTOR]  ' : '[tripulante] ') + p.name));
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+$('download').addEventListener('click', () => {
+  $('status').textContent = 'Descargando among-us-rondas.txt. Si tu navegador lo bloquea, usa Copiar o Ver texto.';
+});
+
+$('showText').addEventListener('click', () => {
+  const dump = $('dump');
+  if (dump.hidden){
+    dump.textContent = buildText();
+    dump.hidden = false;
+    $('showText').textContent = 'Ocultar texto';
+    $('status').textContent = 'Mantén pulsado sobre el texto para seleccionarlo.';
+  } else {
+    dump.hidden = true;
+    $('showText').textContent = 'Ver texto';
+    $('status').textContent = '';
+  }
+});
+
+$('copy').addEventListener('click', async () => {
+  const txt = buildText();
+  try{
+    await navigator.clipboard.writeText(txt);
+    $('status').textContent = 'Historial copiado al portapapeles.';
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{
+      document.execCommand('copy');
+      $('status').textContent = 'Historial copiado al portapapeles.';
+    }catch(err){
+      $('status').textContent = 'No se pudo copiar. Selecciona el texto de la lista a mano.';
+    }
+    ta.remove();
+  }
+});
+
+$('wipe').addEventListener('click', () => {
+  if ($('wipe').dataset.armed === '1'){
+    history = [];
+    refreshFile();
+    paintDoneNote();
+    openResults();
+    $('wipe').dataset.armed = '';
+    $('wipe').textContent = 'Borrar historial';
+    $('status').textContent = 'Historial borrado.';
+  } else {
+    $('wipe').dataset.armed = '1';
+    $('wipe').textContent = 'Pulsa otra vez para borrar todo';
+    $('status').textContent = 'Se borrarán todas las rondas guardadas.';
+  }
+});
+
+/* ---------- prueba de aleatoriedad ---------- */
+$('testRandom').addEventListener('click', () => {
+  const out = $('testOut');
+  const runs = 10000;
+  const hits = new Array(players).fill(0);
+  const pool = Array.from({length: players}, (_, i) => i);
+  for (let n = 0; n < runs; n++){
+    shuffle(pool).slice(0, impostors).forEach(i => hits[i]++);
+  }
+  const ideal = impostors / players * 100;
+  const lines = hits.map((h, i) => {
+    const pct = h / runs * 100;
+    const bars = '█'.repeat(Math.round(pct / 2));
+    return (nameOf(i) + '            ').slice(0, 12) + ' ' +
+           pct.toFixed(1).padStart(5) + '%  ' + bars;
+  });
+  out.textContent = runs.toLocaleString('es-ES') + ' repartos · ' + players + ' jugadores · ' +
+    impostors + (impostors === 1 ? ' impostor' : ' impostores') + '\n' +
+    'Esperado por jugador: ' + ideal.toFixed(1) + '%\n\n' + lines.join('\n');
+  out.hidden = false;
+});
+
+/* ---------- flujo ---------- */
+bindHold($('hold'), reveal);
+bindHold($('holdResults'), openResults);
+
+$('start').addEventListener('click', deal);
+$('again').addEventListener('click', deal);
+$('reset').addEventListener('click', () => show('setup'));
+$('toResults').addEventListener('click', () => { cameFrom = 'done'; lockResults(); show('results'); });
+$('setupToResults').addEventListener('click', () => { cameFrom = 'setup'; lockResults(); show('results'); });
+$('backDone').addEventListener('click', () => show(cameFrom));
+
+paintSetup(true);
+paintDoneNote();
+refreshFile();
+</script>
+</body>
+</html>
