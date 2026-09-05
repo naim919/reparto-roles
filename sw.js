@@ -1,10 +1,17 @@
 /* Cachea la app para que funcione sin cobertura. Sube el número
    de CACHE cada vez que cambies index.html y se actualizará sola. */
-const CACHE = 'sala-v7';
+const CACHE = 'sala-v8';
 const FILES = ['.', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // {cache:'reload'} salta la caché del navegador. Sin esto, al instalar
+  // una versión nueva se podía guardar el index.html viejo, porque
+  // GitHub Pages lo sirve con max-age=600 y addAll() respeta esa caché.
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => Promise.all(FILES.map(f => c.add(new Request(f, {cache: 'reload'})))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {

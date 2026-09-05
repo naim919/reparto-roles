@@ -199,6 +199,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
   text-transform:uppercase;margin-top:4px;overflow-wrap:anywhere}
 .v-sub{font-size:13px;line-height:1.55;margin-top:10px;opacity:.9}
 .round + .round{margin-top:10px}
+.sello{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#5F708A;text-align:center}
 .mini-lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8D9BB0;margin-top:6px}
 
 @media (prefers-reduced-motion:reduce){
@@ -222,6 +223,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
   <div class="stack">
     <button class="ghost" id="hubCodigo">Tengo un código de sala</button>
     <button class="ghost" id="hubResults">Historial de rondas</button>
+    <p class="sello" id="sello"></p>
   </div>
 </section>
 
@@ -709,6 +711,9 @@ const JUEGOS = {
     minJug: 3, maxJug: 15, maxImp: 1, palabras: true, pista: false
   }
 };
+/* Sube con la versión de sw.js, siempre a la vez. Sale en el índice
+   para poder distinguir de un vistazo la app de una copia en caché. */
+const VERSION = 'v8';
 const J = j => JUEGOS[j] || JUEGOS.nave;
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const maxImpOn = () => J(onCfg.juego).maxImp;
@@ -1169,7 +1174,10 @@ function sesClear(){ ses = null; onRolData = null; onRondaVista = -1; try{ local
 /* ---------- pantalla de crear ---------- */
 
 
+const TOTAL_PALABRAS = Object.values(WORDS).flat().length;
+
 function pintarPanel(){
+  $('sello').textContent = TOTAL_PALABRAS + ' palabras · ' + VERSION;
   $('panel').innerHTML = Object.entries(JUEGOS).filter(([, g]) => !g.oculto).map(([k, g]) =>
     '<button class="game-card" data-juego="' + k + '">' +
       '<span class="game-num">' + g.num + '</span><span>' +
@@ -1189,7 +1197,9 @@ function pintarJuego(){
   $('juegoDetalle').innerHTML = (g.maxImp > 1
     ? 'De 1 a ' + g.maxImp + ' ' + g.malos + '. <b>Más de uno solo a partir de 5 jugadores.</b>'
     : 'Siempre un ' + g.malo + '.') +
-    (g.pista ? ' Puedes decidir si el impostor recibe la categoría como pista o si va del todo a ciegas.' : '');
+    (g.pista ? ' Puedes decidir si el impostor recibe la categoría como pista o si va del todo a ciegas.' : '') +
+    (g.palabras ? ' Se sortea entre <b>' + TOTAL_PALABRAS + ' palabras</b> de ' +
+      Object.keys(WORDS).length + ' categorías.' : '');
   $('modoUno').hidden = !g.setup;
   $('juegoResume').hidden = !s;
   if (s) $('juegoResume').textContent = 'Volver a mi partida · ' + s.codigo;
