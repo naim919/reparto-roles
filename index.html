@@ -17,6 +17,7 @@
 :root{
   --hull:#1B2430; --panel:#253244; --line:#3A4A60; --ceramic:#E8E4DA;
   --amber:#F2A13B; --coolant:#2E9E92; --coolant-deep:#0E6B63; --alert:#B32626;
+  --noche:#000; --rol-malo:#D9564E; --rol-bueno:#3FB3A6;
   --display:'Big Shoulders Display','Arial Narrow',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
 }
@@ -105,11 +106,11 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
 .hold-txt{position:relative;mix-blend-mode:difference}
 
 /* revelado */
-#reveal{padding:0;max-width:none;justify-content:center;align-items:center;text-align:center}
-#reveal.crew{background:var(--coolant-deep)}
-#reveal.imp{background:var(--alert)}
+#reveal{padding:0;max-width:none;justify-content:center;align-items:center;text-align:center;background:var(--noche)}
+#reveal.crew .role{color:var(--rol-bueno)}
+#reveal.imp   .role{color:var(--rol-malo)}
 .gauge{position:absolute;top:calc(env(safe-area-inset-top) + 18px);left:22px;right:22px;display:flex;gap:3px;height:8px}
-.seg{flex:1;background:rgba(232,228,218,.9);transition:opacity .18s linear}
+.seg{flex:1;background:rgba(232,228,218,.55);transition:opacity .18s linear}
 .seg.off{opacity:.16}
 .role-wrap{padding:0 20px}
 .role-kicker{font-size:12px;letter-spacing:.3em;text-transform:uppercase;opacity:.75;overflow-wrap:anywhere}
@@ -118,7 +119,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
 .role-sub{font-size:14px;line-height:1.6;opacity:.85;max-width:26ch;margin:0 auto}
 .partners{margin-top:20px;border-top:1px solid rgba(232,228,218,.35);padding-top:14px;font-size:13px}
 .partners b{display:block;font-family:var(--display);font-size:28px;font-weight:700;margin-top:4px;overflow-wrap:anywhere}
-.tick{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 20px);font-family:var(--display);font-size:52px;font-weight:700;opacity:.5}
+.tick{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 20px);font-family:var(--display);font-size:52px;font-weight:700;opacity:.32}
 
 /* fin */
 #done{justify-content:space-between}
@@ -164,9 +165,11 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
 .plist .result-row:last-child{border-bottom:none}
 .plist .result-row.yo{border-left-color:var(--amber)}
 .plist .result-row.yo .result-name{color:var(--amber);font-weight:600}
-.secret{border:1px solid var(--line);background:var(--panel);padding:26px 18px;text-align:center}
-.secret.crew{background:var(--coolant-deep);border-color:var(--coolant)}
-.secret.imp{background:var(--alert);border-color:var(--alert)}
+.secret{border:1px solid var(--line);background:var(--noche);padding:26px 18px;text-align:center}
+.secret.crew{border-color:var(--coolant-deep)}
+.secret.imp{border-color:#5A2320}
+.secret.crew .role{color:var(--rol-bueno)}
+.secret.imp   .role{color:var(--rol-malo)}
 .secret .role{font-size:clamp(44px,15vw,88px);margin:8px 0 12px}
 .secret .role.long{font-size:clamp(30px,9vw,56px)}
 .secret .partners{border-top-color:rgba(232,228,218,.35)}
@@ -851,7 +854,7 @@ function reveal(){
                            : 'No sabes la palabra ni la categoría. Escucha y disimula.')
       : 'Categoría: ' + wordCat.toLowerCase() + '. Da pistas sin decirla.';
   }
-  big.classList.toggle('long', big.textContent.length > 11);
+  big.classList.toggle('long', big.textContent.length > 8);   // 'Saboteador' y 'Tripulante' son de 10
 
   const box = $('partners');
   const mates = roles.filter(r => r.imp && r.i !== me.i).map(r => r.name);
@@ -1312,7 +1315,7 @@ async function verRol(){
                      : 'No sabes la palabra ni la categoría. Escucha y disimula.')
       : 'Categoría: ' + String(r.categoria || '').toLowerCase() + '. Da pistas sin decirla.';
   }
-  big.classList.toggle('long', big.textContent.length > 11);
+  big.classList.toggle('long', big.textContent.length > 8);   // 'Saboteador' y 'Tripulante' son de 10
 
   const mates = r.companeros || [];
   const p = $('onRolPartners');
