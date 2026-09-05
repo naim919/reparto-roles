@@ -566,6 +566,8 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
     <div class="rule"></div>
   </div>
   <div class="scroller">
+    <div class="err" id="flColocarErr" hidden></div>
+    <p class="waiting" id="flColWait" hidden>Esperando a que el rival coloque</p>
     <div class="tab" id="flColTab"></div>
     <p class="marca" id="flColMarca"></p>
     <div class="flota-lista" id="flColBarcos"></div>
@@ -574,8 +576,6 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
       <button class="ghost" id="flAzar">Al azar</button>
     </div>
     <button class="ghost" id="flBorrar">Empezar de cero</button>
-    <p class="waiting" id="flColWait" hidden>Esperando al rival</p>
-    <div class="err" id="flColocarErr" hidden></div>
   </div>
   <div class="stack">
     <button class="cta" id="flListo">Listo</button>
@@ -590,13 +590,13 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
     <div class="rule"></div>
   </div>
   <div class="scroller">
+    <div class="err" id="flJugarErr" hidden></div>
     <div class="turno" id="flTurno">—</div>
     <p class="marca" id="flMarca"></p>
     <p class="mini-lbl" id="flRivalLbl">Aguas del rival</p>
     <div class="tab" id="flTabRival"></div>
     <p class="mini-lbl">Tu tablero</p>
     <div class="tab mini quieto" id="flTabMio"></div>
-    <div class="err" id="flJugarErr" hidden></div>
   </div>
   <div class="stack">
     <button class="ghost" id="flRendirse">Abandonar la partida</button>
@@ -814,7 +814,7 @@ const JUEGOS = {
 };
 /* Sube con la versión de sw.js, siempre a la vez. Sale en el índice
    para poder distinguir de un vistazo la app de una copia en caché. */
-const VERSION = 'v9';
+const VERSION = 'v10';
 const J = j => JUEGOS[j] || JUEGOS.nave;
 // el panel manda el número, no el orden en que estén escritos aquí
 const catalogo = () => Object.entries(JUEGOS).filter(([, g]) => !g.oculto)
@@ -1259,18 +1259,29 @@ let onCfg = { juego:'impostor', imp:1, cat:'Aleatoria', pista:true };
 let onTimer = null, onBusy = false, onRolData = null, onRondaVista = -1, onGuardadas = {};
 let miVoto = null;
 
+/* fetch no se rinde solo: sin este corte, una petición que se pierde
+   con mala cobertura deja el botón en "Enviando…" para siempre y el
+   juego parece colgado. Mejor un error que se pueda leer. */
 async function rpc(fn, args){
-  let r;
+  const corta = new AbortController();
+  const reloj = setTimeout(() => corta.abort(), 12000);
   try{
-    r = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
-      method:'POST',
-      headers:{ apikey:SB_KEY, Authorization:'Bearer ' + SB_KEY, 'Content-Type':'application/json' },
-      body: JSON.stringify(args)
-    });
-  }catch(e){ throw new Error('Sin conexión. Comprueba el wifi o los datos.'); }
-  const body = await r.json().catch(() => null);
-  if (!r.ok) throw new Error((body && body.message) || 'El servidor no responde bien.');
-  return body;
+    let r;
+    try{
+      r = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
+        method:'POST', signal: corta.signal,
+        headers:{ apikey:SB_KEY, Authorization:'Bearer ' + SB_KEY, 'Content-Type':'application/json' },
+        body: JSON.stringify(args)
+      });
+    }catch(e){
+      throw new Error(corta.signal.aborted
+        ? 'El servidor tarda demasiado en contestar. Comprueba la conexión y vuelve a intentarlo.'
+        : 'Sin conexión. Comprueba el wifi o los datos.');
+    }
+    const body = await r.json().catch(() => null);
+    if (!r.ok) throw new Error((body && body.message) || 'El servidor no responde bien.');
+    return body;
+  } finally { clearTimeout(reloj); }
 }
 
 const err = (id, msg) => { const e = $(id); e.textContent = msg || ''; e.hidden = !msg; };
@@ -1283,7 +1294,7 @@ function sesLoad(){
 function sesSave(){ try{ localStorage.setItem(SES_KEY, JSON.stringify(ses)); }catch(e){} }
 function sesClear(){
   ses = null; onRolData = null; onRondaVista = -1;
-  flRonda = -1; fl = { barcos: [], hor: true, enviada: false };
+  flRonda = -1; fl = { barcos: [], hor: true, enviada: false, enviando: false };
   try{ localStorage.removeItem(SES_KEY); }catch(e){}
 }
 
@@ -1395,23 +1406,32 @@ const enJuego = () => PANTALLAS.some(id => $(id).classList.contains('is-active')
 function pollStart(){ pollStop(); pollTick(); onTimer = setInterval(pollTick, 2000); }
 function pollStop(){ clearInterval(onTimer); onTimer = null; }
 
+/* Pide el estado y repinta. Va aparte del sondeo a propósito: cuando
+   acabas de hacer algo (enviar la flota, disparar, votar) la pantalla
+   tiene que moverse ya, y pollTick() se corta en seco si justo había
+   otro sondeo en vuelo — que con un ciclo de 2 s pasa a menudo. */
+async function refrescar(){
+  if (!ses) return;
+  // Hundir la flota no pregunta por la sala sino por tu tablero: es
+  // el servidor quien decide qué parte del juego puedes ver.
+  if (ses.juego === 'flota'){
+    aplicarFlota(await rpc('tablero', { p_token: ses.token }));
+    return;
+  }
+  const s = await rpc('sala', { p_codigo: ses.codigo });
+  if (s.juego === 'flota'){
+    ses.juego = 'flota'; sesSave();
+    aplicarFlota(await rpc('tablero', { p_token: ses.token }));
+  } else aplicarSala(s);
+}
+
 async function pollTick(){
   if (!ses || onBusy) return;
   if (!enJuego()){ pollStop(); return; }
   if (document.hidden) return;
   onBusy = true;
   try{
-    // Hundir la flota no pregunta por la sala sino por tu tablero: es
-    // el servidor quien decide qué parte del juego puedes ver.
-    if (ses.juego === 'flota'){
-      aplicarFlota(await rpc('tablero', { p_token: ses.token }));
-    } else {
-      const s = await rpc('sala', { p_codigo: ses.codigo });
-      if (s.juego === 'flota'){
-        ses.juego = 'flota'; sesSave();
-        aplicarFlota(await rpc('tablero', { p_token: ses.token }));
-      } else aplicarSala(s);
-    }
+    await refrescar();
     err('onLobbyErr','');
   }
   catch(e){
@@ -1486,7 +1506,7 @@ function pintarMarcador(el, marcador){
 
 async function repartir(){
   const b = $('onRepartir'); b.disabled = true; b.textContent = 'Repartiendo…'; err('onLobbyErr','');
-  try{ await rpc('repartir', { p_codigo: ses.codigo, p_host_token: ses.host }); await pollTick(); }
+  try{ await rpc('repartir', { p_codigo: ses.codigo, p_host_token: ses.host }); await refrescar(); }
   catch(e){ err('onLobbyErr', e.message); }
   finally{ b.disabled = false; b.textContent = 'Repartir'; }
 }
@@ -1576,20 +1596,20 @@ function pintarVotacion(s){
 
 async function abrirVotacion(){
   const b = $('onVotacion'); b.disabled = true; err('onRolErr','');
-  try{ await rpc('votacion', { p_codigo: ses.codigo, p_host_token: ses.host }); await pollTick(); }
+  try{ await rpc('votacion', { p_codigo: ses.codigo, p_host_token: ses.host }); await refrescar(); }
   catch(e){ err('onRolErr', e.message); }
   finally{ b.disabled = false; }
 }
 
 async function emitirVoto(orden){
   err('onVotarErr','');
-  try{ await rpc('votar', { p_token: ses.token, p_orden: orden }); miVoto = orden; await pollTick(); }
+  try{ await rpc('votar', { p_token: ses.token, p_orden: orden }); miVoto = orden; await refrescar(); }
   catch(e){ err('onVotarErr', e.message); }
 }
 
 async function terminarRonda(){
   const b = $('onTerminar'); b.disabled = true; err('onRolErr','');
-  try{ await rpc('terminar', { p_codigo: ses.codigo, p_host_token: ses.host }); await pollTick(); }
+  try{ await rpc('terminar', { p_codigo: ses.codigo, p_host_token: ses.host }); await refrescar(); }
   catch(e){ err('onRolErr', e.message); }
   finally{ b.disabled = false; }
 }
@@ -1676,7 +1696,7 @@ function guardarRonda(r){
 
 async function otraRonda(){
   const b = $('onOtra'); b.disabled = true; b.textContent = 'Repartiendo…'; err('onFinErr','');
-  try{ await rpc('repartir', { p_codigo: ses.codigo, p_host_token: ses.host }); await pollTick(); }
+  try{ await rpc('repartir', { p_codigo: ses.codigo, p_host_token: ses.host }); await refrescar(); }
   catch(e){ err('onFinErr', e.message); }
   finally{ b.disabled = false; b.textContent = 'Otra ronda'; }
 }
@@ -1691,7 +1711,7 @@ const LARGOS = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
 const celda = (x, y) => LETRAS[x - 1] + y;
 const xy = c => [LETRAS.indexOf(c[0]) + 1, +c.slice(1)];
 
-let fl = { barcos: [], hor: true, enviada: false };
+let fl = { barcos: [], hor: true, enviada: false, enviando: false };
 let flRonda = -1, flBusy = false;
 
 function pintarTab(el, clases, textos){
@@ -1772,8 +1792,9 @@ function pintarColocar(){
       ? 'Toca dónde empieza el barco de <b>' + sig + (sig > 1 ? ' casillas' : ' casilla') + '</b>.' +
         ' Toca uno ya puesto para quitarlo.'
       : 'Flota completa. Dale a <b>Listo</b>.';
-  $('flListo').disabled = fl.barcos.length < 10 || fl.enviada;
-  ['flGirar','flAzar','flBorrar'].forEach(id => $(id).disabled = fl.enviada);
+  $('flListo').disabled = fl.barcos.length < 10 || fl.enviada || fl.enviando;
+  if (!fl.enviando) $('flListo').textContent = 'Listo';
+  ['flGirar','flAzar','flBorrar'].forEach(id => $(id).disabled = fl.enviada || fl.enviando);
 }
 
 function tocarColocar(c){
@@ -1799,13 +1820,17 @@ function tocarColocar(c){
 }
 
 async function enviarFlota(){
-  const b = $('flListo'); b.disabled = true; b.textContent = 'Enviando…'; err('flColocarErr','');
+  if (fl.enviando || fl.enviada) return;
+  fl.enviando = true;
+  $('flListo').textContent = 'Enviando…'; $('flListo').disabled = true; err('flColocarErr','');
   try{
     await rpc('colocar_flota', { p_token: ses.token, p_barcos: fl.barcos });
     fl.enviada = true;
-    await pollTick();
-  }catch(e){ err('flColocarErr', e.message); }
-  finally{ b.textContent = 'Listo'; pintarColocar(); }
+    await refrescar();
+  }catch(e){
+    err('flColocarErr', e.message);
+  }
+  finally{ fl.enviando = false; pintarColocar(); }
 }
 
 function pintarJugar(t){
@@ -1839,7 +1864,7 @@ async function tirar(c){
       : r.resultado === 'agua' ? 'Agua. Le toca al rival.'
       : r.resultado === 'hundido' ? '<b>¡Hundido!</b> Vuelves a tirar.'
       : '<b>¡Tocado!</b> Vuelves a tirar.';
-    await pollTick();
+    await refrescar();
   }catch(e){ err('flJugarErr', e.message); }
   finally{ flBusy = false; }
 }
@@ -1888,11 +1913,12 @@ function aplicarFlota(t){
     pintarLobby({codigo: t.codigo, juego: 'flota', estado: 'lobby', impostores: 1,
                  ronda: t.ronda, votos: 0, jugadores: js});
   } else if (t.estado === 'colocando'){
-    if (flRonda !== t.ronda){ flRonda = t.ronda; fl = {barcos: [], hor: true, enviada: false}; $('flMarca').textContent = ''; }
+    if (flRonda !== t.ronda){ flRonda = t.ronda; fl = {barcos: [], hor: true, enviada: false, enviando: false}; $('flMarca').textContent = ''; }
     if (t.yo.listo){ fl.enviada = true; if (!fl.barcos.length) fl.barcos = t.yo.flota || []; }
     if (!$('flColocar').classList.contains('is-active')) show('flColocar');
     $('flColEyebrow').textContent = 'Ronda ' + t.ronda + ' · coloca tu flota';
     $('flColWait').hidden = !(t.yo.listo && !t.rival.listo);
+    $('flColTab').classList.toggle('quieto', !!t.yo.listo);
     pintarColocar();
   } else if (t.estado === 'jugando'){
     if (!$('flJugar').classList.contains('is-active')) show('flJugar');
@@ -1905,7 +1931,7 @@ function aplicarFlota(t){
 
 async function otraFlota(){
   const b = $('flOtra'); b.disabled = true; err('flFinErr','');
-  try{ await rpc('repartir', {p_codigo: ses.codigo, p_host_token: ses.host}); await pollTick(); }
+  try{ await rpc('repartir', {p_codigo: ses.codigo, p_host_token: ses.host}); await refrescar(); }
   catch(e){ err('flFinErr', e.message); }
   finally{ b.disabled = false; }
 }
@@ -1918,7 +1944,7 @@ async function abandonar(){
     return;
   }
   b.dataset.seguro = ''; b.textContent = 'Abandonar la partida';
-  try{ await rpc('terminar', {p_codigo: ses.codigo, p_host_token: ses.host || ses.token}); await pollTick(); }
+  try{ await rpc('terminar', {p_codigo: ses.codigo, p_host_token: ses.host || ses.token}); await refrescar(); }
   catch(e){ err('flJugarErr', e.message); }
 }
 
