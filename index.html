@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="Tripulantes y El impostor para jugar pasando un móvil.">
+<meta name="description" content="Tripulantes y El impostor: pasando un móvil, o cada uno desde el suyo con una sala online.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -146,6 +146,34 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
   line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto;user-select:text;-webkit-user-select:text}
 .empty{font-size:13px;color:#8D9BB0;line-height:1.6}
 
+
+/* ---------- partida online ---------- */
+.code-box{border:1px solid var(--amber);background:var(--panel);padding:16px;text-align:center}
+.code-lbl{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#8D9BB0}
+.code-val{font-family:var(--display);font-weight:900;font-size:clamp(58px,21vw,104px);line-height:.9;
+  color:var(--amber);letter-spacing:.14em;margin:2px 0 0 .14em}
+.field{display:flex;align-items:stretch;border:1px solid var(--line);background:var(--panel)}
+.field-lbl{flex:none;padding:0 14px;display:grid;place-items:center;font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--amber);border-right:1px solid var(--line)}
+.field input{flex:1;min-width:0;background:none;border:none;padding:15px 12px;font-size:16px}
+.field input::placeholder{color:#5F708A}
+.field input.codein{font-family:var(--display);font-weight:700;font-size:36px;letter-spacing:.28em;text-transform:uppercase}
+.plist{border:1px solid var(--line)}
+.plist .result-row:last-child{border-bottom:none}
+.plist .result-row.yo{border-left-color:var(--amber)}
+.plist .result-row.yo .result-name{color:var(--amber);font-weight:600}
+.secret{border:1px solid var(--line);background:var(--panel);padding:26px 18px;text-align:center}
+.secret.crew{background:var(--coolant-deep);border-color:var(--coolant)}
+.secret.imp{background:var(--alert);border-color:var(--alert)}
+.secret .role{font-size:clamp(44px,15vw,88px);margin:8px 0 12px}
+.secret .role.long{font-size:clamp(30px,9vw,56px)}
+.secret .partners{border-top-color:rgba(232,228,218,.35)}
+.err{border:1px solid var(--alert);background:rgba(179,38,38,.16);padding:12px 14px;font-size:13px;line-height:1.5}
+.waiting{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--coolant);text-align:center}
+.waiting::after{content:"";animation:dots 1.4s steps(4,end) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+.mini-lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8D9BB0;margin-top:6px}
+
 @media (prefers-reduced-motion:reduce){
   *{transition-duration:.01ms !important}
   .hold-fill{transition:right .6s linear}
@@ -157,7 +185,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
 <!-- 0 · ÍNDICE -->
 <section class="screen is-active" id="hub">
   <div>
-    <p class="eyebrow">Un móvil · se va pasando</p>
+    <p class="eyebrow">Un móvil · o cada uno el suyo</p>
     <h1>Sala de<span>juegos</span></h1>
     <div class="hatch"></div>
   </div>
@@ -178,6 +206,15 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
         <span class="game-name">El impostor</span>
         <span class="game-desc">Todos ven la misma palabra secreta menos uno. Por turnos decís una pista sobre ella sin nombrarla; al final se vota. El impostor gana si no le pillan o si acierta la palabra.</span>
         <span class="game-meta">4–15 jugadores</span>
+      </span>
+    </button>
+
+    <button class="game-card" id="cardOnline">
+      <span class="game-num">03</span>
+      <span>
+        <span class="game-name">Partida online</span>
+        <span class="game-desc">Los mismos dos juegos, pero cada uno en su propio móvil. Creas una sala, dictas el código de cuatro letras y el reparto lo hace el servidor: nadie puede espiar el papel de nadie.</span>
+        <span class="game-meta">3–15 jugadores · hace falta internet</span>
       </span>
     </button>
   </div>
@@ -341,6 +378,171 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
     </div>
     <button class="ghost" id="wipe" hidden>Borrar historial</button>
     <button class="ghost" id="backFromResults">Volver</button>
+  </div>
+</section>
+
+<!-- 6 · ONLINE · PORTADA -->
+<section class="screen" id="onHome">
+  <div>
+    <p class="eyebrow">Cada uno en su móvil</p>
+    <h1>Partida<span>online</span></h1>
+    <div class="hatch"></div>
+  </div>
+  <div class="scroller">
+    <p class="note">Uno crea la sala y dicta el código. Los demás entran desde su propio teléfono y cada uno ve su papel solo en su pantalla. <b>No hay que pasar el móvil a nadie.</b></p>
+    <p class="note">El sorteo lo hace el servidor y la palabra secreta no sale de ahí: aunque abras las tripas de la página, no vas a encontrar quién es el impostor.</p>
+    <div class="err" id="onHomeErr" hidden></div>
+  </div>
+  <div class="stack">
+    <button class="ghost" id="onResume" hidden>Volver a mi partida</button>
+    <button class="cta" id="onGoCrear">Crear sala</button>
+    <button class="ghost" id="onGoEntrar">Tengo un código</button>
+    <button class="ghost" data-back="hub">Volver</button>
+  </div>
+</section>
+
+<!-- 7 · ONLINE · CREAR -->
+<section class="screen" id="onCrear">
+  <div>
+    <p class="eyebrow">Crear sala</p>
+    <div class="rule"></div>
+  </div>
+  <div class="scroller">
+    <div class="stepper">
+      <div class="stepper-head"><span class="stepper-label">Juego</span></div>
+      <div class="chips" id="onJuego">
+        <button class="chip on" data-j="nave">Tripulantes</button>
+        <button class="chip" data-j="impostor">El impostor</button>
+      </div>
+    </div>
+
+    <div class="stepper">
+      <div class="stepper-head">
+        <span class="stepper-label">Impostores</span>
+        <span class="stepper-cap" id="onImpCap"></span>
+      </div>
+      <div class="stepper-row">
+        <button class="bump" id="onImpDown">−</button>
+        <span class="stepper-val" id="onImpVal">1</span>
+        <button class="bump" id="onImpUp">+</button>
+      </div>
+      <p class="note" style="margin-top:8px">Se decide ahora, pero el reparto no ocurre hasta que estéis todos dentro.</p>
+    </div>
+
+    <div id="onCatWrap" hidden>
+      <div class="stepper">
+        <div class="stepper-head"><span class="stepper-label">Categoría</span></div>
+        <div class="chips" id="onCats"></div>
+      </div>
+    </div>
+
+    <button class="toggle on" id="onPista" hidden>
+      <span class="toggle-txt">Dar la categoría al impostor<small>Sabe de qué va la cosa, pero no la palabra. Sin esto va a ciegas.</small></span>
+      <span class="switch"></span>
+    </button>
+
+    <div class="field">
+      <span class="field-lbl">Tú</span>
+      <input id="onNombreC" type="text" maxlength="18" placeholder="Tu nombre" autocomplete="name" enterkeyhint="go">
+    </div>
+    <div class="err" id="onCrearErr" hidden></div>
+  </div>
+  <div class="stack">
+    <button class="cta" id="onCrearGo">Crear sala</button>
+    <button class="ghost" data-back="onHome">Volver</button>
+  </div>
+</section>
+
+<!-- 8 · ONLINE · ENTRAR -->
+<section class="screen" id="onEntrar">
+  <div>
+    <p class="eyebrow">Entrar en una sala</p>
+    <div class="rule"></div>
+  </div>
+  <div class="scroller">
+    <p class="note">Pide el código de cuatro letras a quien haya creado la sala.</p>
+    <div class="field">
+      <input id="onCodigo" class="codein" type="text" maxlength="4" placeholder="ABCD"
+             autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="next">
+    </div>
+    <div class="field">
+      <span class="field-lbl">Tú</span>
+      <input id="onNombreE" type="text" maxlength="18" placeholder="Tu nombre" autocomplete="name" enterkeyhint="go">
+    </div>
+    <div class="err" id="onEntrarErr" hidden></div>
+  </div>
+  <div class="stack">
+    <button class="cta" id="onEntrarGo">Entrar</button>
+    <button class="ghost" data-back="onHome">Volver</button>
+  </div>
+</section>
+
+<!-- 9 · ONLINE · LOBBY -->
+<section class="screen" id="onLobby">
+  <div>
+    <p class="eyebrow" id="onLobbyEyebrow">Sala abierta</p>
+    <div class="rule"></div>
+  </div>
+  <div class="scroller">
+    <div class="code-box">
+      <div class="code-lbl">Código de la sala</div>
+      <div class="code-val" id="onCodeBig">····</div>
+    </div>
+    <button class="ghost" id="onShare">Compartir el enlace</button>
+    <div class="plist" id="onPlayers"></div>
+    <p class="note" id="onLobbyNote"></p>
+    <p class="waiting" id="onLobbyWait" hidden>Esperando al anfitrión</p>
+    <div class="err" id="onLobbyErr" hidden></div>
+  </div>
+  <div class="stack">
+    <button class="cta" id="onRepartir" hidden>Repartir</button>
+    <button class="ghost" id="onSalir1">Salir de la sala</button>
+  </div>
+</section>
+
+<!-- 10 · ONLINE · TU PAPEL -->
+<section class="screen" id="onRol">
+  <div>
+    <p class="eyebrow" id="onRolEyebrow">Tu papel</p>
+    <div class="rule"></div>
+  </div>
+  <div class="scroller">
+    <p class="note" id="onRolIntro">Este móvil es tuyo, así que no hay prisa: míralo las veces que quieras. Tápalo cuando alguien se acerque.</p>
+    <div class="secret" id="onSecret" hidden>
+      <p class="role-kicker" id="onRolKicker"></p>
+      <p class="role" id="onRolName"></p>
+      <p class="role-sub" id="onRolSub"></p>
+      <div class="partners" id="onRolPartners" hidden></div>
+    </div>
+    <p class="note" id="onRolStart"></p>
+    <p class="mini-lbl" id="onRolSeenLbl" hidden>Quién ha mirado ya</p>
+    <div class="plist" id="onRolPlayers" hidden></div>
+    <div class="err" id="onRolErr" hidden></div>
+  </div>
+  <div class="stack">
+    <button class="hold" id="onRolHold"><span class="hold-fill"></span><span class="hold-txt">Mantén pulsado</span></button>
+    <button class="ghost" id="onRolHide" hidden>Ocultar</button>
+    <button class="ghost" id="onTerminar" hidden>Cerrar la ronda y destapar</button>
+    <button class="ghost" id="onSalir2">Salir de la sala</button>
+  </div>
+</section>
+
+<!-- 11 · ONLINE · DESTAPE -->
+<section class="screen" id="onFin">
+  <div>
+    <p class="eyebrow">Se acabó</p>
+    <h1 id="onFinTitle">Al<span>descubierto</span></h1>
+    <div class="hatch"></div>
+  </div>
+  <div class="scroller">
+    <div class="round" id="onFinRound"></div>
+    <p class="note" id="onFinNote"></p>
+    <p class="waiting" id="onFinWait" hidden>Esperando al anfitrión</p>
+    <div class="err" id="onFinErr" hidden></div>
+  </div>
+  <div class="stack">
+    <button class="cta" id="onOtra" hidden>Otra ronda</button>
+    <button class="ghost" id="onSalir3">Salir de la sala</button>
   </div>
 </section>
 
@@ -775,6 +977,359 @@ $('backFromResults').addEventListener('click', () => show(cameFrom));
 
 loadHistory();
 paintAU(true); paintCats(); paintIM(true); refreshFile();
+
+
+/* =====================================================================
+   PARTIDA ONLINE
+   Cada uno en su móvil. El reparto lo hace el servidor: aquí abajo no
+   hay ni una línea que decida quién es impostor, y no la busques, que
+   no está. Lo único que viaja a este móvil es lo que le toca a quien
+   lo sostiene.
+
+   La clave de aquí abajo es publicable a propósito. Las tablas están
+   cerradas con RLS y sin permisos: con esta clave no se puede leer
+   nada directamente, solo llamar a las siete funciones del servidor.
+   ===================================================================== */
+
+const SB_URL = 'https://omjsjdqsdjdofxuqnurj.supabase.co';
+const SB_KEY = 'sb_publishable_YvscpEat-wLXZZg1CRzHdw_Sp5iMMnG';
+const SES_KEY = 'sala-de-juegos-online';
+
+let ses = null;                                   // {codigo, token, host, nombre, juego}
+let onCfg = { juego:'nave', imp:1, cat:'Aleatoria', pista:true };
+let onTimer = null, onBusy = false, onRolData = null, onRondaVista = -1, onGuardadas = {};
+
+async function rpc(fn, args){
+  let r;
+  try{
+    r = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
+      method:'POST',
+      headers:{ apikey:SB_KEY, Authorization:'Bearer ' + SB_KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify(args)
+    });
+  }catch(e){ throw new Error('Sin conexión. Comprueba el wifi o los datos.'); }
+  const body = await r.json().catch(() => null);
+  if (!r.ok) throw new Error((body && body.message) || 'El servidor no responde bien.');
+  return body;
+}
+
+const err = (id, msg) => { const e = $(id); e.textContent = msg || ''; e.hidden = !msg; };
+
+/* ---------- sesión guardada en este móvil ---------- */
+function sesLoad(){
+  try{ ses = JSON.parse(localStorage.getItem(SES_KEY) || 'null'); }catch(e){ ses = null; }
+  return ses;
+}
+function sesSave(){ try{ localStorage.setItem(SES_KEY, JSON.stringify(ses)); }catch(e){} }
+function sesClear(){ ses = null; onRolData = null; onRondaVista = -1; try{ localStorage.removeItem(SES_KEY); }catch(e){} }
+
+/* ---------- pantalla de crear ---------- */
+const maxImpOn = () => onCfg.juego === 'impostor' ? 2 : 3;
+
+function pintarCrear(){
+  document.querySelectorAll('#onJuego .chip').forEach(c => c.classList.toggle('on', c.dataset.j === onCfg.juego));
+  if (onCfg.imp > maxImpOn()) onCfg.imp = maxImpOn();
+  $('onImpVal').textContent = onCfg.imp;
+  $('onImpCap').textContent = '1 a ' + maxImpOn();
+  $('onImpDown').disabled = onCfg.imp <= 1;
+  $('onImpUp').disabled = onCfg.imp >= maxImpOn();
+  const esImp = onCfg.juego === 'impostor';
+  $('onCatWrap').hidden = !esImp;
+  $('onPista').hidden = !esImp;
+  $('onPista').classList.toggle('on', onCfg.pista);
+  if (esImp && !$('onCats').children.length){
+    $('onCats').innerHTML = CATS.map(c =>
+      '<button class="chip" data-c="' + esc(c) + '">' + esc(c) + '</button>').join('');
+    $('onCats').addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if (!b) return;
+      onCfg.cat = b.dataset.c; pintarCrear();
+    });
+  }
+  document.querySelectorAll('#onCats .chip').forEach(c => c.classList.toggle('on', c.dataset.c === onCfg.cat));
+}
+
+/* ---------- crear y entrar ---------- */
+async function crearSala(){
+  const nombre = $('onNombreC').value.trim();
+  if (!nombre){ err('onCrearErr', 'Escribe tu nombre.'); $('onNombreC').focus(); return; }
+  const btn = $('onCrearGo'); btn.disabled = true; btn.textContent = 'Creando…'; err('onCrearErr', '');
+  try{
+    const r = await rpc('crear_partida', {
+      p_juego: onCfg.juego, p_impostores: onCfg.imp,
+      p_categoria: onCfg.juego === 'impostor' && onCfg.cat !== 'Aleatoria' ? onCfg.cat : null,
+      p_pista: onCfg.pista, p_nombre: nombre
+    });
+    ses = { codigo:r.codigo, token:r.token, host:r.host_token, nombre:r.nombre, juego:onCfg.juego };
+    sesSave(); onRondaVista = -1; onRolData = null;
+    show('onLobby'); pollStart();
+  }catch(e){ err('onCrearErr', e.message); }
+  finally{ btn.disabled = false; btn.textContent = 'Crear sala'; }
+}
+
+async function entrarSala(){
+  const codigo = $('onCodigo').value.trim().toUpperCase();
+  const nombre = $('onNombreE').value.trim();
+  if (codigo.length !== 4){ err('onEntrarErr', 'El código tiene cuatro letras.'); $('onCodigo').focus(); return; }
+  if (!nombre){ err('onEntrarErr', 'Escribe tu nombre.'); $('onNombreE').focus(); return; }
+  const btn = $('onEntrarGo'); btn.disabled = true; btn.textContent = 'Entrando…'; err('onEntrarErr', '');
+  try{
+    const r = await rpc('unirse', { p_codigo: codigo, p_nombre: nombre });
+    ses = { codigo:codigo, token:r.token, host:null, nombre:r.nombre, juego:null };
+    sesSave(); onRondaVista = -1; onRolData = null;
+    show('onLobby'); pollStart();
+  }catch(e){ err('onEntrarErr', e.message); }
+  finally{ btn.disabled = false; btn.textContent = 'Entrar'; }
+}
+
+/* ---------- sondeo ----------
+   Cada 2 s se pregunta al servidor cómo va la sala. Se corta solo si
+   el móvil se bloquea o te vas a otra pantalla: no tiene sentido
+   gastar batería preguntando por una sala que no estás mirando.     */
+const PANTALLAS = ['onLobby','onRol','onFin'];
+const enJuego = () => PANTALLAS.some(id => $(id).classList.contains('is-active'));
+
+function pollStart(){ pollStop(); pollTick(); onTimer = setInterval(pollTick, 2000); }
+function pollStop(){ clearInterval(onTimer); onTimer = null; }
+
+async function pollTick(){
+  if (!ses || onBusy) return;
+  if (!enJuego()){ pollStop(); return; }
+  if (document.hidden) return;
+  onBusy = true;
+  try{ aplicarSala(await rpc('sala', { p_codigo: ses.codigo })); err('onLobbyErr',''); }
+  catch(e){
+    if (/No existe esa sala/i.test(e.message)){
+      pollStop(); sesClear(); show('onHome');
+      err('onHomeErr', 'Esa sala ya no existe. Las salas se borran solas a las 12 horas.');
+    } else err(enJuego() ? ($('onLobby').classList.contains('is-active') ? 'onLobbyErr' : 'onRolErr') : 'onHomeErr', e.message);
+  }
+  finally{ onBusy = false; }
+}
+
+function aplicarSala(s){
+  if (ses.juego !== s.juego){ ses.juego = s.juego; sesSave(); }
+  if (s.estado === 'lobby'){
+    if (!$('onLobby').classList.contains('is-active')) show('onLobby');
+    pintarLobby(s);
+  } else if (s.estado === 'repartida'){
+    pintarSeen(s);
+    $('onRolStart').innerHTML = s.empieza ? 'Empieza <b>' + esc(s.empieza) + '</b>.' : '';
+    if (onRondaVista !== s.ronda){ onRondaVista = s.ronda; onRolData = null; taparRol(); cargarRol(); }
+    if (!$('onRol').classList.contains('is-active')) show('onRol');
+    $('onRolEyebrow').textContent = 'Ronda ' + s.ronda + ' · sala ' + s.codigo;
+    $('onTerminar').hidden = !ses.host;
+  } else if (s.estado === 'terminada'){
+    if (!$('onFin').classList.contains('is-active')){ show('onFin'); cargarFin(); }
+    $('onOtra').hidden = !ses.host;
+    $('onFinWait').hidden = !!ses.host;
+  }
+}
+
+/* ---------- lobby ---------- */
+function pintarLobby(s){
+  $('onCodeBig').textContent = s.codigo;
+  $('onLobbyEyebrow').textContent = (s.juego === 'impostor' ? 'El impostor' : 'Tripulantes') +
+    ' · ' + s.impostores + (s.impostores === 1 ? ' impostor' : ' impostores');
+  $('onPlayers').innerHTML = s.jugadores.map(j =>
+    '<div class="result-row' + (j.nombre === ses.nombre ? ' yo' : '') + '">' +
+      '<span class="result-name">' + esc(j.nombre) + '</span>' +
+      '<span class="result-tag">' + (j.orden === 1 ? 'Anfitrión' : '') + '</span></div>').join('');
+  const n = s.jugadores.length;
+  const faltan = Math.max(0, 3 - n);
+  $('onLobbyNote').innerHTML = n + (n === 1 ? ' jugador dentro. ' : ' jugadores dentro. ') +
+    (faltan ? '<b>Faltan ' + faltan + ' para poder repartir.</b>' : 'Ya se puede repartir.');
+  $('onRepartir').hidden = !ses.host;
+  $('onRepartir').disabled = n < 3;
+  $('onLobbyWait').hidden = !!ses.host;
+}
+
+async function repartir(){
+  const b = $('onRepartir'); b.disabled = true; b.textContent = 'Repartiendo…'; err('onLobbyErr','');
+  try{ await rpc('repartir', { p_codigo: ses.codigo, p_host_token: ses.host }); await pollTick(); }
+  catch(e){ err('onLobbyErr', e.message); }
+  finally{ b.disabled = false; b.textContent = 'Repartir'; }
+}
+
+/* ---------- tu papel ---------- */
+async function cargarRol(){
+  try{ onRolData = await rpc('mi_rol', { p_token: ses.token }); err('onRolErr',''); return true; }
+  catch(e){ err('onRolErr', e.message); return false; }
+}
+
+function taparRol(){
+  $('onSecret').hidden = true;
+  $('onRolHold').hidden = false;
+  $('onRolHide').hidden = true;
+  $('onRolIntro').hidden = false;
+}
+
+async function verRol(){
+  if (!onRolData && !(await cargarRol())) return;
+  const r = onRolData;
+  const box = $('onSecret');
+  box.classList.toggle('imp', !!r.impostor);
+  box.classList.toggle('crew', !r.impostor);
+  $('onRolKicker').textContent = r.nombre;
+
+  const big = $('onRolName');
+  if (r.juego === 'nave'){
+    big.textContent = r.impostor ? 'Impostor' : 'Tripulante';
+    $('onRolSub').textContent = r.impostor
+      ? 'Sabotea, elimina y miente. Que no te pillen.'
+      : 'Completa tus tareas y descubre quién finge hacerlas.';
+  } else {
+    big.textContent = r.impostor ? 'Impostor' : r.palabra;
+    $('onRolSub').textContent = r.impostor
+      ? (r.categoria ? 'No sabes la palabra. La categoría es ' + r.categoria.toLowerCase() + '. Disimula.'
+                     : 'No sabes la palabra ni la categoría. Escucha y disimula.')
+      : 'Categoría: ' + String(r.categoria || '').toLowerCase() + '. Da pistas sin decirla.';
+  }
+  big.classList.toggle('long', big.textContent.length > 11);
+
+  const mates = r.companeros || [];
+  const p = $('onRolPartners');
+  if (r.impostor && mates.length){
+    p.innerHTML = (mates.length === 1 ? 'Tu compañero es' : 'Tus compañeros son') + '<b>' + esc(mates.join(' · ')) + '</b>';
+    p.hidden = false;
+  } else p.hidden = true;
+
+  box.hidden = false;
+  $('onRolHold').hidden = true;
+  $('onRolHide').hidden = false;
+  $('onRolIntro').hidden = true;
+}
+
+function pintarSeen(s){
+  const host = !!ses.host;
+  $('onRolSeenLbl').hidden = !host;
+  $('onRolPlayers').hidden = !host;
+  if (!host) return;
+  $('onRolPlayers').innerHTML = s.jugadores.map(j =>
+    '<div class="result-row' + (j.nombre === ses.nombre ? ' yo' : '') + '">' +
+      '<span class="result-name">' + esc(j.nombre) + '</span>' +
+      '<span class="result-tag">' + (j.visto ? 'ya lo ha visto' : 'esperando') + '</span></div>').join('');
+}
+
+async function terminarRonda(){
+  const b = $('onTerminar'); b.disabled = true; err('onRolErr','');
+  try{ await rpc('terminar', { p_codigo: ses.codigo, p_host_token: ses.host }); await pollTick(); }
+  catch(e){ err('onRolErr', e.message); }
+  finally{ b.disabled = false; }
+}
+
+/* ---------- destape ---------- */
+async function cargarFin(){
+  try{
+    const r = await rpc('resultados', { p_codigo: ses.codigo });
+    err('onFinErr','');
+    const rows = r.jugadores.map(j =>
+      '<div class="result-row' + (j.impostor ? ' is-imp' : '') + '">' +
+        '<span class="result-name">' + esc(j.nombre) + '</span>' +
+        '<span class="result-tag">' + (j.impostor ? 'Impostor' : (r.juego === 'impostor' ? 'Lo sabía' : 'Tripulante')) + '</span>' +
+      '</div>').join('');
+    const linea = r.palabra
+      ? '<div class="round-word">Palabra: <b>' + esc(r.palabra) + '</b> · ' + esc(r.categoria) + ' · empezó ' + esc(r.empieza) + '</div>'
+      : (r.empieza ? '<div class="round-word">Empezó <b>' + esc(r.empieza) + '</b></div>' : '');
+    $('onFinRound').innerHTML =
+      '<div class="round-head"><span class="round-n">Sala ' + esc(ses.codigo) + '</span>' +
+      '<span class="round-when">Ronda ' + r.ronda + '<br>' + r.jugadores.length + ' jug.</span></div>' +
+      linea + '<div class="round-body">' + rows + '</div>';
+    $('onFinNote').innerHTML = ses.host
+      ? 'Puedes lanzar otra ronda con la misma gente: se vuelve a sortear todo desde cero.'
+      : 'La ronda ha terminado. Si el anfitrión lanza otra, tu papel aparecerá solo.';
+    guardarRonda(r);
+  }catch(e){ err('onFinErr', e.message); }
+}
+
+/* Las partidas online también van al historial de este móvil, que es
+   el mismo sitio donde acaban las de un solo teléfono. */
+function guardarRonda(r){
+  const marca = ses.codigo + '#' + r.ronda;
+  if (onGuardadas[marca]) return;
+  onGuardadas[marca] = true;
+  const entry = {
+    ts: Date.now(), game: r.juego, players: r.jugadores.length,
+    impostors: r.jugadores.filter(j => j.impostor).length,
+    roles: r.jugadores.map(j => ({ name: j.nombre, imp: !!j.impostor })), online: ses.codigo
+  };
+  if (r.palabra){ entry.word = r.palabra; entry.cat = r.categoria; entry.starter = r.empieza; }
+  history.push(entry); saveHistory(); refreshFile();
+}
+
+async function otraRonda(){
+  const b = $('onOtra'); b.disabled = true; b.textContent = 'Repartiendo…'; err('onFinErr','');
+  try{ await rpc('repartir', { p_codigo: ses.codigo, p_host_token: ses.host }); await pollTick(); }
+  catch(e){ err('onFinErr', e.message); }
+  finally{ b.disabled = false; b.textContent = 'Otra ronda'; }
+}
+
+/* ---------- salir ---------- */
+function salirSala(){
+  pollStop(); sesClear(); err('onHomeErr',''); pintarHome(); show('onHome');
+}
+
+function pintarHome(){
+  const s = sesLoad();
+  $('onResume').hidden = !s;
+  if (s) $('onResume').textContent = 'Volver a mi partida · ' + s.codigo;
+}
+
+/* ---------- compartir ---------- */
+async function compartir(){
+  const url = location.origin + location.pathname + '?sala=' + ses.codigo;
+  const txt = 'Entra en la sala ' + ses.codigo + ': ' + url;
+  if (navigator.share){
+    try{ await navigator.share({ title:'Sala de juegos', text:'Entra en la sala ' + ses.codigo, url:url }); return; }
+    catch(e){ if (e.name === 'AbortError') return; }
+  }
+  try{ await navigator.clipboard.writeText(txt); $('onShare').textContent = 'Enlace copiado'; }
+  catch(e){ $('onShare').textContent = url; }
+  setTimeout(() => { $('onShare').textContent = 'Compartir el enlace'; }, 2500);
+}
+
+/* ---------- cableado ---------- */
+$('cardOnline').addEventListener('click', () => { pintarHome(); show('onHome'); });
+$('onGoCrear').addEventListener('click', () => { err('onCrearErr',''); pintarCrear(); show('onCrear'); });
+$('onGoEntrar').addEventListener('click', () => { err('onEntrarErr',''); show('onEntrar'); });
+$('onResume').addEventListener('click', () => { if (sesLoad()){ show('onLobby'); pollStart(); } });
+
+$('onJuego').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  onCfg.juego = b.dataset.j; pintarCrear();
+});
+$('onImpDown').addEventListener('click', () => { onCfg.imp = Math.max(1, onCfg.imp - 1); pintarCrear(); });
+$('onImpUp').addEventListener('click', () => { onCfg.imp = Math.min(maxImpOn(), onCfg.imp + 1); pintarCrear(); });
+$('onPista').addEventListener('click', () => { onCfg.pista = !onCfg.pista; pintarCrear(); });
+
+$('onCrearGo').addEventListener('click', crearSala);
+$('onEntrarGo').addEventListener('click', entrarSala);
+$('onNombreC').addEventListener('keydown', e => { if (e.key === 'Enter') crearSala(); });
+$('onNombreE').addEventListener('keydown', e => { if (e.key === 'Enter') entrarSala(); });
+$('onCodigo').addEventListener('input', e => {
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g, '').slice(0, 4);
+  if (e.target.value.length === 4) $('onNombreE').focus();
+});
+
+$('onShare').addEventListener('click', compartir);
+$('onRepartir').addEventListener('click', repartir);
+bindHold($('onRolHold'), verRol);
+$('onRolHide').addEventListener('click', taparRol);
+$('onTerminar').addEventListener('click', terminarRonda);
+$('onOtra').addEventListener('click', otraRonda);
+['onSalir1','onSalir2','onSalir3'].forEach(id => $(id).addEventListener('click', salirSala));
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ses && enJuego()) pollTick(); });
+
+/* ¿Han compartido conmigo un enlace con sala? */
+(function(){
+  const sala = new URLSearchParams(location.search).get('sala');
+  pintarHome();
+  if (sala && /^[A-HJ-NP-Z2-9]{4}$/i.test(sala)){
+    $('onCodigo').value = sala.toUpperCase();
+    show('onEntrar');
+    setTimeout(() => $('onNombreE').focus(), 300);
+  }
+})();
 
 if ('serviceWorker' in navigator){
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
