@@ -45,9 +45,9 @@ h1 span{display:block;color:var(--amber)}
   border:1px solid var(--line);background:var(--panel);padding:18px 16px;transition:border-color .15s ease}
 .game-card:active{border-color:var(--amber)}
 .game-num{font-family:var(--display);font-weight:900;font-size:44px;line-height:.8;color:var(--amber);flex:none}
-.game-name{font-family:var(--display);font-weight:700;font-size:30px;line-height:.95;text-transform:uppercase}
-.game-desc{font-size:12.5px;color:#8D9BB0;line-height:1.55;margin-top:6px}
-.game-meta{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--coolant);margin-top:8px}
+.game-name{display:block;font-family:var(--display);font-weight:700;font-size:30px;line-height:.95;text-transform:uppercase}
+.game-desc{display:block;font-size:12.5px;color:#8D9BB0;line-height:1.55;margin-top:6px}
+.game-meta{display:block;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--coolant);margin-top:8px}
 
 /* ajustes */
 .stepper{background:var(--panel);border:1px solid var(--line);padding:14px 16px}
@@ -217,7 +217,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
       <span class="game-num">01</span>
       <span>
         <span class="game-name">Tripulantes</span>
-        <span class="game-desc">Reparte tripulantes e impostores. Cada uno ve su rol tres segundos y pasa el móvil. Los impostores se conocen entre ellos.</span>
+        <span class="game-desc">Reparte tripulantes y saboteadores. Cada uno ve su rol tres segundos y pasa el móvil. Los saboteadores se conocen entre ellos.</span>
         <span class="game-meta">3–15 jugadores</span>
       </span>
     </button>
@@ -262,7 +262,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
       </div>
     </div>
     <div class="stepper">
-      <div class="stepper-head"><span class="stepper-label">Impostores</span><span class="stepper-cap" id="auCap">máx. 3</span></div>
+      <div class="stepper-head"><span class="stepper-label">Saboteadores</span><span class="stepper-cap" id="auCap">máx. 3</span></div>
       <div class="stepper-row">
         <button class="bump" data-act="i-">–</button>
         <span class="stepper-val" id="auImpostors">2</span>
@@ -411,38 +411,51 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
     <div class="hatch"></div>
   </div>
   <div class="scroller">
-    <p class="note">Uno crea la sala y dicta el código. Los demás entran desde su propio teléfono y cada uno ve su papel solo en su pantalla. <b>No hay que pasar el móvil a nadie.</b></p>
-    <p class="note">El sorteo lo hace el servidor y la palabra secreta no sale de ahí: aunque abras las tripas de la página, no vas a encontrar quién es el impostor.</p>
+    <p class="note">Elige a qué jugáis. Luego creas la sala y dictas el código; los demás entran desde su propio teléfono.</p>
+    <div id="onJuegos"></div>
     <div class="err" id="onHomeErr" hidden></div>
   </div>
   <div class="stack">
     <button class="ghost" id="onResume" hidden>Volver a mi partida</button>
-    <button class="cta" id="onGoCrear">Crear sala</button>
-    <button class="ghost" id="onGoEntrar">Tengo un código</button>
+    <button class="ghost" id="onGoEntrar">Ya tengo un código de sala</button>
     <button class="ghost" data-back="hub">Volver</button>
+  </div>
+</section>
+
+<!-- 6b · ONLINE · JUEGO ELEGIDO -->
+<section class="screen" id="onMenu">
+  <div>
+    <p class="eyebrow">Partida online</p>
+    <h1 id="onMenuTitulo"></h1>
+    <div class="hatch"></div>
+  </div>
+  <div class="scroller">
+    <p class="note" id="onMenuReglas"></p>
+    <div class="stepper">
+      <div class="stepper-head">
+        <span class="stepper-label">La mesa</span>
+        <span class="stepper-cap" id="onMenuFicha"></span>
+      </div>
+      <p class="note" id="onMenuDetalle" style="margin-top:8px"></p>
+    </div>
+  </div>
+  <div class="stack">
+    <button class="cta" id="onMenuCrear">Crear la partida</button>
+    <button class="ghost" id="onMenuEntrar">Unirme con un código</button>
+    <button class="ghost" data-back="onHome">Volver</button>
   </div>
 </section>
 
 <!-- 7 · ONLINE · CREAR -->
 <section class="screen" id="onCrear">
   <div>
-    <p class="eyebrow">Crear sala</p>
+    <p class="eyebrow" id="onCrearEyebrow">Crear sala</p>
     <div class="rule"></div>
   </div>
   <div class="scroller">
-    <div class="stepper">
-      <div class="stepper-head"><span class="stepper-label">Juego</span></div>
-      <div class="chips" id="onJuego">
-        <button class="chip on" data-j="nave">Tripulantes</button>
-        <button class="chip" data-j="impostor">El impostor</button>
-        <button class="chip" data-j="intruso">El intruso</button>
-      </div>
-      <p class="note" id="onJuegoDesc" style="margin-top:10px"></p>
-    </div>
-
-    <div class="stepper">
+    <div class="stepper" id="onImpWrap">
       <div class="stepper-head">
-        <span class="stepper-label">Impostores</span>
+        <span class="stepper-label" id="onImpLabel">Impostores</span>
         <span class="stepper-cap" id="onImpCap"></span>
       </div>
       <div class="stepper-row">
@@ -450,7 +463,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
         <span class="stepper-val" id="onImpVal">1</span>
         <button class="bump" id="onImpUp">+</button>
       </div>
-      <p class="note" style="margin-top:8px">Se decide ahora, pero el reparto no ocurre hasta que estéis todos dentro.</p>
+      <p class="note" id="onImpNota" style="margin-top:8px"></p>
     </div>
 
     <div id="onCatWrap" hidden>
@@ -473,7 +486,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
   </div>
   <div class="stack">
     <button class="cta" id="onCrearGo">Crear sala</button>
-    <button class="ghost" data-back="onHome">Volver</button>
+    <button class="ghost" data-back="onMenu">Volver</button>
   </div>
 </section>
 
@@ -626,6 +639,38 @@ const WORDS = {
 };
 const CATS = ['Aleatoria', ...Object.keys(WORDS)];
 
+/* Todo lo que distingue a un juego de otro vive aquí. Los topes tienen
+   que coincidir con cupo_jugadores() y cupo_impostores() del servidor,
+   que es quien manda: el móvil solo evita que pidas algo imposible. */
+const JUEGOS = {
+  impostor: {
+    num: '01', nombre: 'El impostor', h1: 'El<span>impostor</span>',
+    malo: 'impostor', malos: 'impostores', limpio: 'Lo sabía',
+    corta: 'Todos veis la misma palabra secreta menos uno. Por turnos decís una pista sin nombrarla y al final se vota.',
+    reglas: 'Todos recibís la misma palabra menos el impostor, que como mucho sabe la categoría. Por turnos, cada uno dice una palabra relacionada con la secreta sin llegar a decirla: demasiado obvio y el impostor la adivina, demasiado vago y pareces tú el raro. Al final se vota.',
+    maxJug: 20, maxImp: 5, palabras: true, pista: true
+  },
+  intruso: {
+    num: '02', nombre: 'El intruso', h1: 'El<span>intruso</span>',
+    malo: 'intruso', malos: 'intrusos', limpio: 'Grupo',
+    corta: 'Todos recibís una palabra. A uno le toca otra parecida, y nadie sabe a quién — ni siquiera él.',
+    reglas: 'Todos recibís una palabra de una pareja parecida: camarero y cocinero, caracol y tortuga. A uno le toca la otra. Lo bueno es que nadie sabe si le ha tocado la rara, así que tienes que dar pistas y a la vez averiguar si el raro eres tú.',
+    maxJug: 15, maxImp: 1, palabras: true, pista: false
+  },
+  nave: {
+    num: '03', nombre: 'Tripulantes', h1: 'Tri<span>pulantes</span>',
+    malo: 'saboteador', malos: 'saboteadores', limpio: 'Tripulante',
+    corta: 'Unos cuantos son saboteadores y se conocen entre ellos. Los demás no saben nada de nadie.',
+    reglas: 'Se reparten tripulantes y saboteadores. Los saboteadores se conocen entre ellos; los tripulantes no saben nada de nadie. A partir de ahí, el juego ocurre fuera del móvil: la app solo reparte y luego recoge la votación.',
+    maxJug: 15, maxImp: 3, palabras: false, pista: false
+  }
+};
+const J = j => JUEGOS[j] || JUEGOS.nave;
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const maxImpOn = () => J(onCfg.juego).maxImp;
+const MALO = j => 'el ' + J(j).malo;
+const JUEGO = j => J(j).nombre;
+
 /* ---------- estado ---------- */
 let game = 'nave';
 const cfg = {
@@ -688,7 +733,7 @@ function paintAU(rebuild){
   $('auImpostors').textContent = c.impostors;
   $('auCap').textContent = 'máx. ' + mx;
   $('auNote').innerHTML = 'Con <b>' + c.players + ' jugadores</b> caben hasta <b>' + mx + ' ' +
-    (mx === 1 ? 'impostor' : 'impostores') + '</b>. Quedan <b>' + (c.players - c.impostors) + '</b> tripulantes.';
+    (mx === 1 ? 'saboteador' : 'saboteadores') + '</b>. Quedan <b>' + (c.players - c.impostors) + '</b> tripulantes.';
   document.querySelector('[data-act="p-"]').disabled = c.players <= 3;
   document.querySelector('[data-act="p+"]').disabled = c.players >= 15;
   document.querySelector('[data-act="i-"]').disabled = c.impostors <= 1;
@@ -719,7 +764,7 @@ function paintIM(rebuild){
   $('imNote').innerHTML = '<b>' + (c.players - c.impostors) + '</b> saben la palabra, <b>' + c.impostors +
     '</b> no. Se sortea entre <b>' + pool + ' palabras</b>' +
     (c.cat === 'Aleatoria' ? ' de todas las categorías.' : ' de ' + c.cat.toLowerCase() + '.') +
-    ' Con 2 impostores se conocen entre ellos.';
+    ' Con 2 saboteadores se conocen entre ellos.';
   document.querySelector('[data-act="P-"]').disabled = c.players <= 4;
   document.querySelector('[data-act="P+"]').disabled = c.players >= 15;
   document.querySelector('[data-act="I-"]').disabled = c.impostors <= 1;
@@ -784,7 +829,7 @@ function finish(){
     $('doneTitle').innerHTML = 'A la<br><span>nave</span>';
     $('doneTally').innerHTML =
       '<div class="tally-box"><div class="tally-n">' + (c.players - c.impostors) + '</div><div class="tally-l">Tripulantes</div></div>' +
-      '<div class="tally-box"><div class="tally-n">' + c.impostors + '</div><div class="tally-l">Impostores</div></div>';
+      '<div class="tally-box"><div class="tally-n">' + c.impostors + '</div><div class="tally-l">Saboteadores</div></div>';
   } else {
     $('doneTitle').innerHTML = 'Que<br>empiece la<span>ronda</span>';
     $('doneTally').innerHTML =
@@ -829,10 +874,10 @@ function reveal(){
 
   const big = $('roleName');
   if (game === 'nave'){
-    big.textContent = me.imp ? 'Impostor' : 'Tripulante';
+    big.textContent = me.imp ? 'Saboteador' : 'Tripulante';
     $('roleSub').textContent = me.imp
-      ? 'Sabotea, elimina y miente. Que no te pillen.'
-      : 'Completa tus tareas y descubre quién finge hacerlas.';
+      ? 'Sabotea, miente y disimula. Que no te pillen.'
+      : 'Haz tus tareas y descubre quién finge hacerlas.';
   } else {
     big.textContent = me.imp ? 'Impostor' : word;
     $('roleSub').textContent = me.imp
@@ -905,8 +950,7 @@ function openResults(){
       const rows = r.roles.map(p =>
         '<div class="result-row' + (p.imp ? ' is-imp' : '') + '">' +
           '<span class="result-name">' + esc(p.name) + '</span>' +
-          '<span class="result-tag">' + (p.imp ? (r.game === 'intruso' ? 'Intruso' : 'Impostor')
-          : r.game === 'impostor' ? 'Lo sabía' : r.game === 'intruso' ? 'Grupo' : 'Tripulante') + '</span>' +
+          '<span class="result-tag">' + (p.imp ? cap(J(r.game).malo) : J(r.game).limpio) + '</span>' +
         '</div>').join('');
       const wordLine = r.word
         ? '<div class="round-word">Palabra: <b>' + esc(r.word) + '</b>' +
@@ -918,7 +962,8 @@ function openResults(){
           '</div>' : '';
       card.innerHTML =
         '<div class="round-head"><span class="round-n">' + n + ' · ' + gameLabel(r.game) + '</span>' +
-        '<span class="round-when">' + fmt(r.ts) + '<br>' + r.players + ' jug. · ' + r.impostors + ' imp.</span></div>' +
+        '<span class="round-when">' + fmt(r.ts) + '<br>' + r.players + ' jug. · ' +
+        r.impostors + ' ' + J(r.game).malos.slice(0, 3) + '.</span></div>' +
         wordLine + veredicto + '<div class="round-body">' + rows + '</div>';
       list.appendChild(card);
     });
@@ -936,9 +981,9 @@ function buildText(){
   const lines = ['SALA DE JUEGOS · HISTORIAL DE RONDAS', 'Generado el ' + fmt(Date.now()), ''];
   history.forEach((r, i) => {
     lines.push('RONDA ' + (i + 1) + ' · ' + gameLabel(r.game).toUpperCase() + ' — ' + fmt(r.ts));
-    lines.push(r.players + ' jugadores · ' + r.impostors + ' impostores');
+    lines.push(r.players + ' jugadores · ' + r.impostors + ' ' + J(r.game).malos);
     if (r.word) lines.push('Palabra: ' + r.word + ' (' + r.cat + ') · empezó ' + r.starter);
-    r.roles.forEach(p => lines.push('  ' + (p.imp ? '[IMPOSTOR]   ' : '[normal]     ') + p.name));
+    r.roles.forEach(p => lines.push('  ' + (p.imp ? ('[' + J(r.game).malo.toUpperCase() + ']').padEnd(13) : '[normal]     ') + p.name));
     lines.push('');
   });
   return lines.join('\n');
@@ -1053,7 +1098,7 @@ const SB_KEY = 'sb_publishable_YvscpEat-wLXZZg1CRzHdw_Sp5iMMnG';
 const SES_KEY = 'sala-de-juegos-online';
 
 let ses = null;                                   // {codigo, token, host, nombre, juego}
-let onCfg = { juego:'nave', imp:1, cat:'Aleatoria', pista:true };
+let onCfg = { juego:'impostor', imp:1, cat:'Aleatoria', pista:true };
 let onTimer = null, onBusy = false, onRolData = null, onRondaVista = -1, onGuardadas = {};
 let miVoto = null;
 
@@ -1082,27 +1127,47 @@ function sesSave(){ try{ localStorage.setItem(SES_KEY, JSON.stringify(ses)); }ca
 function sesClear(){ ses = null; onRolData = null; onRondaVista = -1; try{ localStorage.removeItem(SES_KEY); }catch(e){} }
 
 /* ---------- pantalla de crear ---------- */
-const maxImpOn = () => onCfg.juego === 'intruso' ? 1 : (onCfg.juego === 'impostor' ? 2 : 3);
-const DESC = {
-  nave: 'Unos cuantos son impostores y se conocen entre ellos. Los demás no saben nada.',
-  impostor: 'Todos ven la misma palabra menos uno, que solo sabe la categoría.',
-  intruso: 'Todos reciben una palabra. A uno le toca otra parecida — y nadie sabe a quién, ni siquiera él.'
-};
-const MALO = j => j === 'intruso' ? 'el intruso' : (j === 'impostor' ? 'el impostor' : 'los impostores');
-const JUEGO = { nave:'Tripulantes', impostor:'El impostor', intruso:'El intruso' };
+
+
+function pintarJuegos(){
+  $('onJuegos').innerHTML = Object.entries(JUEGOS).map(([k, g]) =>
+    '<button class="game-card" data-juego="' + k + '">' +
+      '<span class="game-num">' + g.num + '</span><span>' +
+      '<span class="game-name">' + g.nombre + '</span>' +
+      '<span class="game-desc">' + g.corta + '</span>' +
+      '<span class="game-meta">3–' + g.maxJug + ' jugadores' +
+        (g.maxImp > 1 ? ' · hasta ' + g.maxImp + ' ' + g.malos : '') + '</span>' +
+      '</span></button>').join('');
+}
+
+function pintarMenu(){
+  const g = J(onCfg.juego);
+  $('onMenuTitulo').innerHTML = g.h1;
+  $('onMenuReglas').textContent = g.reglas;
+  $('onMenuFicha').textContent = '3–' + g.maxJug + ' jugadores';
+  $('onMenuDetalle').innerHTML = g.maxImp > 1
+    ? 'De 1 a ' + g.maxImp + ' ' + g.malos + '. <b>Más de uno solo a partir de 5 jugadores.</b>' +
+      (g.pista ? ' Puedes decidir si el impostor sabe la categoría o va del todo a ciegas.' : '')
+    : 'Siempre un ' + g.malo + ', juegue quien juegue.';
+}
 
 function pintarCrear(){
-  document.querySelectorAll('#onJuego .chip').forEach(c => c.classList.toggle('on', c.dataset.j === onCfg.juego));
+  const g = J(onCfg.juego);
   if (onCfg.imp > maxImpOn()) onCfg.imp = maxImpOn();
+  $('onCrearEyebrow').textContent = 'Crear sala · ' + g.nombre;
+  $('onImpWrap').hidden = g.maxImp < 2;
+  $('onImpLabel').textContent = cap(g.malos);
   $('onImpVal').textContent = onCfg.imp;
-  $('onImpCap').textContent = '1 a ' + maxImpOn();
+  $('onImpCap').textContent = '1 a ' + g.maxImp;
   $('onImpDown').disabled = onCfg.imp <= 1;
-  $('onImpUp').disabled = onCfg.imp >= maxImpOn();
-  $('onJuegoDesc').textContent = DESC[onCfg.juego];
-  const conPalabras = onCfg.juego === 'impostor' || onCfg.juego === 'intruso';
+  $('onImpUp').disabled = onCfg.imp >= g.maxImp;
+  $('onImpNota').innerHTML = onCfg.imp > 1
+    ? 'Con más de un ' + g.malo + ' hacen falta <b>al menos 5 jugadores</b>. Se conocen entre ellos.'
+    : 'Un solo ' + g.malo + '. Sube el número si vais a ser cinco o más.';
+  const conPalabras = g.palabras;
   const esImp = conPalabras;
   $('onCatWrap').hidden = !conPalabras;
-  $('onPista').hidden = onCfg.juego !== 'impostor';
+  $('onPista').hidden = !g.pista;
   $('onPista').classList.toggle('on', onCfg.pista);
   if (esImp && !$('onCats').children.length){
     $('onCats').innerHTML = CATS.map(c =>
@@ -1202,9 +1267,9 @@ function aplicarSala(s){
 /* ---------- lobby ---------- */
 function pintarLobby(s){
   $('onCodeBig').textContent = s.codigo;
-  $('onLobbyEyebrow').textContent = JUEGO[s.juego] + ' · ' +
-    (s.juego === 'intruso' ? '1 intruso'
-      : s.impostores + (s.impostores === 1 ? ' impostor' : ' impostores'));
+  const g = J(s.juego);
+  $('onLobbyEyebrow').textContent = g.nombre + ' · ' + s.impostores + ' ' +
+    (s.impostores === 1 ? g.malo : g.malos);
   $('onPlayers').innerHTML = s.jugadores.map(j =>
     '<div class="result-row' + (j.nombre === ses.nombre ? ' yo' : '') + '">' +
       '<span class="result-name">' + esc(j.nombre) + '</span>' +
@@ -1270,10 +1335,10 @@ async function verRol(){
     $('onRolSub').textContent = 'Categoría: ' + String(r.categoria || '').toLowerCase() +
       '. Puede que a alguien le haya tocado otra parecida. Da pistas y averigua si eres tú.';
   } else if (r.juego === 'nave'){
-    big.textContent = r.impostor ? 'Impostor' : 'Tripulante';
+    big.textContent = r.impostor ? 'Saboteador' : 'Tripulante';
     $('onRolSub').textContent = r.impostor
-      ? 'Sabotea, elimina y miente. Que no te pillen.'
-      : 'Completa tus tareas y descubre quién finge hacerlas.';
+      ? 'Sabotea, miente y disimula. Que no te pillen.'
+      : 'Haz tus tareas y descubre quién finge hacerlas.';
   } else {
     big.textContent = r.impostor ? 'Impostor' : r.palabra;
     $('onRolSub').textContent = r.impostor
@@ -1345,8 +1410,9 @@ async function terminarRonda(){
 
 /* ---------- destape ---------- */
 function tarjetaRonda(r){
-  const malo = r.juego === 'intruso' ? 'Intruso' : 'Impostor';
-  const limpio = r.juego === 'nave' ? 'Tripulante' : r.juego === 'intruso' ? 'Grupo' : 'Lo sabía';
+  const g = J(r.juego);
+  const malo = cap(g.malo);
+  const limpio = g.limpio;
   const rows = (r.jugadores || []).map(j =>
     '<div class="result-row' + (j.impostor ? ' is-imp' : '') + '">' +
       '<span class="result-name">' + esc(j.nombre) +
@@ -1355,7 +1421,7 @@ function tarjetaRonda(r){
         (j.recibidos ? ' · ' + j.recibidos + (j.recibidos === 1 ? ' voto' : ' votos') : '') + '</span>' +
     '</div>').join('');
   const palabras = r.juego === 'intruso'
-    ? 'El grupo: <b>' + esc(r.palabra) + '</b> · ' + malo.toLowerCase() + ': <b>' + esc(r.palabra_b) + '</b>'
+    ? 'El grupo: <b>' + esc(r.palabra) + '</b> · ' + g.malo + ': <b>' + esc(r.palabra_b) + '</b>'
     : (r.palabra ? 'Palabra: <b>' + esc(r.palabra) + '</b>' : '');
   const linea = palabras ? '<div class="round-word">' + palabras +
     (r.categoria ? ' · ' + esc(r.categoria) : '') + '</div>' : '';
@@ -1377,7 +1443,7 @@ async function cargarFin(){
       ? '<div class="v-lbl">Expulsado</div><div class="v-quien">' + esc(r.expulsado) + '</div>' +
         '<div class="v-sub">' + (r.gano === 'equipo'
           ? 'Era ' + malo + '. Gana el equipo: un punto para cada uno.'
-          : 'Era inocente. ' + (r.juego === 'intruso' ? 'Gana el intruso' : 'Ganan los impostores') + ': dos puntos.') + '</div>'
+          : 'Era inocente. Ganan ' + (J(r.juego).maxImp === 1 ? 'el ' + J(r.juego).malo : 'los ' + J(r.juego).malos) + ': dos puntos.') + '</div>'
       : '<div class="v-lbl">Sin expulsión</div><div class="v-quien">Empate</div>' +
         '<div class="v-sub">Nadie se lleva puntos esta ronda.</div>';
     $('onFinRound').outerHTML = tarjetaRonda(r).replace('<div class="round">', '<div class="round" id="onFinRound">');
@@ -1435,6 +1501,7 @@ function salirSala(){
 }
 
 function pintarHome(){
+  pintarJuegos();
   const s = sesLoad();
   $('onResume').hidden = !s;
   if (s) $('onResume').textContent = 'Volver a mi partida · ' + s.codigo;
@@ -1455,14 +1522,17 @@ async function compartir(){
 
 /* ---------- cableado ---------- */
 $('cardOnline').addEventListener('click', () => { pintarHome(); show('onHome'); });
-$('onGoCrear').addEventListener('click', () => { err('onCrearErr',''); pintarCrear(); show('onCrear'); });
+$('onJuegos').addEventListener('click', e => {
+  const b = e.target.closest('[data-juego]'); if (!b) return;
+  onCfg.juego = b.dataset.juego;
+  onCfg.imp = Math.min(onCfg.imp, maxImpOn());
+  pintarMenu(); show('onMenu');
+});
+$('onMenuCrear').addEventListener('click', () => { err('onCrearErr',''); pintarCrear(); show('onCrear'); });
+$('onMenuEntrar').addEventListener('click', () => { err('onEntrarErr',''); show('onEntrar'); });
 $('onGoEntrar').addEventListener('click', () => { err('onEntrarErr',''); show('onEntrar'); });
 $('onResume').addEventListener('click', () => { if (sesLoad()){ show('onLobby'); pollStart(); } });
 
-$('onJuego').addEventListener('click', e => {
-  const b = e.target.closest('.chip'); if (!b) return;
-  onCfg.juego = b.dataset.j; pintarCrear();
-});
 $('onImpDown').addEventListener('click', () => { onCfg.imp = Math.max(1, onCfg.imp - 1); pintarCrear(); });
 $('onImpUp').addEventListener('click', () => { onCfg.imp = Math.min(maxImpOn(), onCfg.imp + 1); pintarCrear(); });
 $('onPista').addEventListener('click', () => { onCfg.pista = !onCfg.pista; pintarCrear(); });
