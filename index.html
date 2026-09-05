@@ -199,6 +199,31 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
   text-transform:uppercase;margin-top:4px;overflow-wrap:anywhere}
 .v-sub{font-size:13px;line-height:1.55;margin-top:10px;opacity:.9}
 .round + .round{margin-top:10px}
+/* ---------- hundir la flota ---------- */
+.tab{display:grid;grid-template-columns:repeat(11,1fr);gap:2px;width:100%;touch-action:manipulation}
+.tab-h{display:grid;place-items:center;font-size:9px;color:#5F708A;font-variant-numeric:tabular-nums}
+.tab-c{aspect-ratio:1;display:grid;place-items:center;font-size:12px;line-height:1;
+  background:#141C26;border:1px solid var(--line);padding:0}
+.tab-c.barco{background:rgba(46,158,146,.32);border-color:var(--coolant)}
+.tab-c.previa{background:rgba(46,158,146,.35);border-color:var(--coolant)}
+.tab-c.mal{background:rgba(179,38,38,.35);border-color:var(--alert)}
+.tab-c.agua{color:#4A5A70}
+.tab-c.tocado{background:rgba(217,86,78,.22);border-color:var(--rol-malo);color:var(--rol-malo)}
+.tab-c.hundido{background:var(--rol-malo);border-color:var(--rol-malo);color:var(--noche);font-weight:700}
+.tab.mini{gap:1px}
+.tab.mini .tab-c{font-size:9px}
+.tab.mini .tab-h{font-size:7px}
+.tab.quieto{opacity:.55;pointer-events:none}
+.turno{border:1px solid var(--line);background:var(--panel);padding:12px 14px;text-align:center;
+  font-family:var(--display);font-weight:700;font-size:26px;text-transform:uppercase;line-height:1}
+.turno.mio{background:var(--amber);color:var(--hull);border-color:var(--amber)}
+.flota-lista{display:flex;flex-wrap:wrap;gap:6px}
+.barco-chip{border:1px solid var(--line);background:var(--panel);padding:7px 11px;font-size:12px;
+  font-variant-numeric:tabular-nums}
+.barco-chip.puesto{opacity:.35;text-decoration:line-through}
+.barco-chip.ahora{background:var(--amber);color:var(--hull);border-color:var(--amber);font-weight:600}
+.marca{font-size:12px;color:#8D9BB0;line-height:1.5;text-align:center;min-height:1.4em}
+.marca b{color:var(--ceramic)}
 .sello{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#5F708A;text-align:center}
 .mini-lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8D9BB0;margin-top:6px}
 
@@ -534,6 +559,73 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
   </div>
 </section>
 
+<!-- 10b · FLOTA · COLOCAR -->
+<section class="screen" id="flColocar">
+  <div>
+    <p class="eyebrow" id="flColEyebrow">Coloca tu flota</p>
+    <div class="rule"></div>
+  </div>
+  <div class="scroller">
+    <div class="tab" id="flColTab"></div>
+    <p class="marca" id="flColMarca"></p>
+    <div class="flota-lista" id="flColBarcos"></div>
+    <div class="pair">
+      <button class="ghost" id="flGirar">Horizontal</button>
+      <button class="ghost" id="flAzar">Al azar</button>
+    </div>
+    <button class="ghost" id="flBorrar">Empezar de cero</button>
+    <p class="waiting" id="flColWait" hidden>Esperando al rival</p>
+    <div class="err" id="flColocarErr" hidden></div>
+  </div>
+  <div class="stack">
+    <button class="cta" id="flListo">Listo</button>
+    <button class="ghost" id="flSalir1">Salir de la sala</button>
+  </div>
+</section>
+
+<!-- 10c · FLOTA · JUGAR -->
+<section class="screen" id="flJugar">
+  <div>
+    <p class="eyebrow" id="flJugEyebrow">Hundir la flota</p>
+    <div class="rule"></div>
+  </div>
+  <div class="scroller">
+    <div class="turno" id="flTurno">—</div>
+    <p class="marca" id="flMarca"></p>
+    <p class="mini-lbl" id="flRivalLbl">Aguas del rival</p>
+    <div class="tab" id="flTabRival"></div>
+    <p class="mini-lbl">Tu tablero</p>
+    <div class="tab mini quieto" id="flTabMio"></div>
+    <div class="err" id="flJugarErr" hidden></div>
+  </div>
+  <div class="stack">
+    <button class="ghost" id="flRendirse">Abandonar la partida</button>
+    <button class="ghost" id="flSalir2">Salir de la sala</button>
+  </div>
+</section>
+
+<!-- 10d · FLOTA · FINAL -->
+<section class="screen" id="flFin">
+  <div>
+    <p class="eyebrow">Se acabó</p>
+    <h1 id="flFinTitulo">A<span>pique</span></h1>
+    <div class="hatch"></div>
+  </div>
+  <div class="scroller">
+    <div class="veredicto" id="flVeredicto"></div>
+    <p class="mini-lbl">Marcador de la sala</p>
+    <div class="marcador" id="flMarcador"></div>
+    <p class="mini-lbl">Cómo quedó tu tablero</p>
+    <div class="tab mini quieto" id="flTabFin"></div>
+    <p class="waiting" id="flFinWait" hidden>Esperando al rival</p>
+    <div class="err" id="flFinErr" hidden></div>
+  </div>
+  <div class="stack">
+    <button class="cta" id="flOtra" hidden>Otra partida</button>
+    <button class="ghost" id="flSalir3">Salir de la sala</button>
+  </div>
+</section>
+
 <!-- 11 · ONLINE · VOTACIÓN -->
 <section class="screen" id="onVotar">
   <div>
@@ -689,14 +781,23 @@ const CATS = ['Aleatoria', ...Object.keys(WORDS)];
    sigue soportando y quitarle esta línea lo devuelve a la lista. */
 const JUEGOS = {
   impostor: {
-    num: '01', nombre: 'Palabra secreta', h1: 'Palabra<span>secreta</span>',
+    num: '01', nombre: 'Palabra secreta', h1: 'Palabra<span>secreta</span>', empezar: 'Repartir', otra: 'Otra ronda',
     setup: 'setupIM', malo: 'impostor', malos: 'impostores', limpio: 'Lo sabía',
     corta: 'Todos veis la misma palabra menos uno. Por turnos decís una pista sin nombrarla y al final se vota.',
     reglas: 'Todos recibís la misma palabra secreta menos el impostor. Por turnos, cada uno dice una palabra relacionada con la secreta sin llegar a decirla: si eres demasiado obvio el impostor la adivina, y si eres demasiado vago pareces tú el raro. Al final se vota. El impostor gana si no le pilláis.',
     minJug: 3, maxJug: 20, maxImp: 5, palabras: true, pista: true
   },
+  flota: {
+    num: '03', nombre: 'Hundir la flota', h1: 'Hundir<span>la flota</span>',
+    setup: null, malo: 'rival', malos: 'rivales', limpio: '', soloOnline: true,
+    empezar: 'Empezar la partida', otra: 'Otra partida',
+    corta: 'Colocas tu flota y disparáis por turnos. El tablero del rival no sale de su móvil.',
+    reglas: 'Cada uno coloca en secreto una flota de diez barcos: uno de cuatro casillas, dos de tres, tres de dos y cuatro sueltos. No pueden tocarse, ni siquiera en diagonal. Luego se dispara por turnos: si aciertas, repites tiro. Gana quien hunda antes las veinte casillas del otro.',
+    detalle: 'Dos jugadores, cada uno en su móvil. El reparto y los disparos los arbitra el servidor: la posición de tus barcos no sale nunca de él, así que el rival no puede espiarla ni abriendo la página por dentro.',
+    minJug: 2, maxJug: 2, maxImp: 1, palabras: false, pista: false
+  },
   nave: {
-    num: '02', nombre: 'Sabotaje', h1: '<span>Sabotaje</span>',
+    num: '02', nombre: 'Sabotaje', h1: '<span>Sabotaje</span>', empezar: 'Repartir', otra: 'Otra ronda',
     setup: 'setupAU', malo: 'saboteador', malos: 'saboteadores', limpio: 'Tripulante',
     corta: 'Unos cuantos son saboteadores y se conocen entre ellos. Los demás no saben nada de nadie.',
     reglas: 'Se reparten tripulantes y saboteadores. Los saboteadores se conocen entre ellos; los tripulantes no saben nada de nadie. A partir de ahí el juego ocurre en la mesa: la app reparte los papeles y luego recoge la votación.',
@@ -713,8 +814,13 @@ const JUEGOS = {
 };
 /* Sube con la versión de sw.js, siempre a la vez. Sale en el índice
    para poder distinguir de un vistazo la app de una copia en caché. */
-const VERSION = 'v8';
+const VERSION = 'v9';
 const J = j => JUEGOS[j] || JUEGOS.nave;
+// el panel manda el número, no el orden en que estén escritos aquí
+const catalogo = () => Object.entries(JUEGOS).filter(([, g]) => !g.oculto)
+  .sort((a, b) => a[1].num.localeCompare(b[1].num));
+const cuantos = g => g.minJug === g.maxJug ? g.maxJug + ' jugadores'
+                                           : g.minJug + '–' + g.maxJug + ' jugadores';
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const maxImpOn = () => J(onCfg.juego).maxImp;
 const MALO = j => 'el ' + J(j).malo;
@@ -1006,14 +1112,17 @@ function openResults(){
         ? '<div class="round-word">Palabra: <b>' + esc(r.word) + '</b>' +
           (r.wordB ? ' · intruso: <b>' + esc(r.wordB) + '</b>' : '') +
           ' · ' + esc(r.cat) + ' · empezó ' + esc(r.starter) + '</div>' : '';
-      const veredicto = r.gano
+      const veredicto = r.game === 'flota'
+        ? '<div class="round-word">Ganó <b>' + esc(r.ganador) + '</b></div>'
+        : r.gano
         ? '<div class="round-word">' + (r.expulsado ? 'Fuera <b>' + esc(r.expulsado) + '</b>' : 'Empate') + ' · ' +
           (r.gano === 'equipo' ? 'ganó el equipo' : r.gano === 'impostores' ? 'ganaron ellos' : 'sin puntos') +
           '</div>' : '';
       card.innerHTML =
         '<div class="round-head"><span class="round-n">' + n + ' · ' + gameLabel(r.game) + '</span>' +
-        '<span class="round-when">' + fmt(r.ts) + '<br>' + r.players + ' jug. · ' +
-        r.impostors + ' ' + J(r.game).malos.slice(0, 3) + '.</span></div>' +
+        '<span class="round-when">' + fmt(r.ts) + '<br>' + r.players + ' jug.' +
+        (r.game === 'flota' ? '' : ' · ' + r.impostors + ' ' + J(r.game).malos.slice(0, 3) + '.') +
+        '</span></div>' +
         wordLine + veredicto + '<div class="round-body">' + rows + '</div>';
       list.appendChild(card);
     });
@@ -1031,9 +1140,12 @@ function buildText(){
   const lines = ['SALA DE JUEGOS · HISTORIAL DE RONDAS', 'Generado el ' + fmt(Date.now()), ''];
   history.forEach((r, i) => {
     lines.push('RONDA ' + (i + 1) + ' · ' + gameLabel(r.game).toUpperCase() + ' — ' + fmt(r.ts));
-    lines.push(r.players + ' jugadores · ' + r.impostors + ' ' + J(r.game).malos);
+    lines.push(r.game === 'flota'
+      ? '2 jugadores · ganó ' + r.ganador
+      : r.players + ' jugadores · ' + r.impostors + ' ' + J(r.game).malos);
     if (r.word) lines.push('Palabra: ' + r.word + ' (' + r.cat + ') · empezó ' + r.starter);
-    r.roles.forEach(p => lines.push('  ' + (p.imp ? ('[' + J(r.game).malo.toUpperCase() + ']').padEnd(13) : '[normal]     ') + p.name));
+    r.roles.forEach(p => lines.push('  ' + (r.game === 'flota' ? '  '
+      : p.imp ? ('[' + J(r.game).malo.toUpperCase() + ']').padEnd(13) : '[normal]     ') + p.name));
     lines.push('');
   });
   return lines.join('\n');
@@ -1169,7 +1281,11 @@ function sesLoad(){
   return ses;
 }
 function sesSave(){ try{ localStorage.setItem(SES_KEY, JSON.stringify(ses)); }catch(e){} }
-function sesClear(){ ses = null; onRolData = null; onRondaVista = -1; try{ localStorage.removeItem(SES_KEY); }catch(e){} }
+function sesClear(){
+  ses = null; onRolData = null; onRondaVista = -1;
+  flRonda = -1; fl = { barcos: [], hor: true, enviada: false };
+  try{ localStorage.removeItem(SES_KEY); }catch(e){}
+}
 
 /* ---------- pantalla de crear ---------- */
 
@@ -1178,12 +1294,12 @@ const TOTAL_PALABRAS = Object.values(WORDS).flat().length;
 
 function pintarPanel(){
   $('sello').textContent = TOTAL_PALABRAS + ' palabras · ' + VERSION;
-  $('panel').innerHTML = Object.entries(JUEGOS).filter(([, g]) => !g.oculto).map(([k, g]) =>
+  $('panel').innerHTML = catalogo().map(([k, g]) =>
     '<button class="game-card" data-juego="' + k + '">' +
       '<span class="game-num">' + g.num + '</span><span>' +
       '<span class="game-name">' + g.nombre + '</span>' +
       '<span class="game-desc">' + g.corta + '</span>' +
-      '<span class="game-meta">' + g.minJug + '–' + g.maxJug + ' jugadores' +
+      '<span class="game-meta">' + cuantos(g) +
         (g.maxImp > 1 ? ' · hasta ' + g.maxImp + ' ' + g.malos : '') + '</span>' +
       '</span></button>').join('');
 }
@@ -1193,13 +1309,14 @@ function pintarJuego(){
   $('juegoNum').textContent = 'Juego ' + g.num;
   $('juegoTitulo').innerHTML = g.h1;
   $('juegoReglas').textContent = g.reglas;
-  $('juegoFicha').textContent = g.minJug + '–' + g.maxJug + ' jugadores';
-  $('juegoDetalle').innerHTML = (g.maxImp > 1
-    ? 'De 1 a ' + g.maxImp + ' ' + g.malos + '. <b>Más de uno solo a partir de 5 jugadores.</b>'
-    : 'Siempre un ' + g.malo + '.') +
+  $('juegoFicha').textContent = cuantos(g);
+  $('juegoDetalle').innerHTML = g.detalle || (
+    (g.maxImp > 1
+      ? 'De 1 a ' + g.maxImp + ' ' + g.malos + '. <b>Más de uno solo a partir de 5 jugadores.</b>'
+      : 'Siempre un ' + g.malo + '.') +
     (g.pista ? ' Puedes decidir si el impostor recibe la categoría como pista o si va del todo a ciegas.' : '') +
     (g.palabras ? ' Se sortea entre <b>' + TOTAL_PALABRAS + ' palabras</b> de ' +
-      Object.keys(WORDS).length + ' categorías.' : '');
+      Object.keys(WORDS).length + ' categorías.' : ''));
   $('modoUno').hidden = !g.setup;
   $('juegoResume').hidden = !s;
   if (s) $('juegoResume').textContent = 'Volver a mi partida · ' + s.codigo;
@@ -1272,7 +1389,7 @@ async function entrarSala(){
    Cada 2 s se pregunta al servidor cómo va la sala. Se corta solo si
    el móvil se bloquea o te vas a otra pantalla: no tiene sentido
    gastar batería preguntando por una sala que no estás mirando.     */
-const PANTALLAS = ['onLobby','onRol','onVotar','onFin'];
+const PANTALLAS = ['onLobby','onRol','onVotar','onFin','flColocar','flJugar','flFin'];
 const enJuego = () => PANTALLAS.some(id => $(id).classList.contains('is-active'));
 
 function pollStart(){ pollStop(); pollTick(); onTimer = setInterval(pollTick, 2000); }
@@ -1283,13 +1400,26 @@ async function pollTick(){
   if (!enJuego()){ pollStop(); return; }
   if (document.hidden) return;
   onBusy = true;
-  try{ aplicarSala(await rpc('sala', { p_codigo: ses.codigo })); err('onLobbyErr',''); }
+  try{
+    // Hundir la flota no pregunta por la sala sino por tu tablero: es
+    // el servidor quien decide qué parte del juego puedes ver.
+    if (ses.juego === 'flota'){
+      aplicarFlota(await rpc('tablero', { p_token: ses.token }));
+    } else {
+      const s = await rpc('sala', { p_codigo: ses.codigo });
+      if (s.juego === 'flota'){
+        ses.juego = 'flota'; sesSave();
+        aplicarFlota(await rpc('tablero', { p_token: ses.token }));
+      } else aplicarSala(s);
+    }
+    err('onLobbyErr','');
+  }
   catch(e){
     if (/No existe esa sala/i.test(e.message)){
       pollStop(); sesClear(); show('hub');
       err('juegoErr', 'Esa sala ya no existe. Las salas se borran solas a las 12 horas.');
     } else {
-      const destino = ['onLobby','onRol','onVotar','onFin'].find(id => $(id).classList.contains('is-active'));
+      const destino = PANTALLAS.find(id => $(id).classList.contains('is-active'));
       err(destino ? destino + 'Err' : 'juegoErr', e.message);
     }
   }
@@ -1323,19 +1453,20 @@ function aplicarSala(s){
 function pintarLobby(s){
   $('onCodeBig').textContent = s.codigo;
   const g = J(s.juego);
-  $('onLobbyEyebrow').textContent = g.nombre + ' · ' + s.impostores + ' ' +
-    (s.impostores === 1 ? g.malo : g.malos);
+  $('onLobbyEyebrow').textContent = g.nombre + ' · ' +
+    (s.juego === 'flota' ? 'dos jugadores'
+      : s.impostores + ' ' + (s.impostores === 1 ? g.malo : g.malos));
   $('onPlayers').innerHTML = s.jugadores.map(j =>
     '<div class="result-row' + (j.nombre === ses.nombre ? ' yo' : '') + '">' +
       '<span class="result-name">' + esc(j.nombre) + '</span>' +
       '<span class="result-tag">' + (j.orden === 1 ? 'Anfitrión' : '') + '</span></div>').join('');
   const n = s.jugadores.length;
-  const faltan = Math.max(0, 3 - n);
+  const faltan = Math.max(0, g.minJug - n);
   $('onLobbyNote').innerHTML = n + (n === 1 ? ' jugador dentro. ' : ' jugadores dentro. ') +
-    (faltan ? '<b>Faltan ' + faltan + ' para poder repartir.</b>' : 'Ya se puede repartir.');
+    (faltan ? '<b>Falta' + (faltan > 1 ? 'n ' + faltan : ' 1') + ' para empezar.</b>' : 'Ya podéis empezar.');
   $('onRepartir').hidden = !ses.host;
-  $('onRepartir').disabled = n < 3;
-  $('onRepartir').textContent = s.ronda > 0 ? 'Otra ronda' : 'Repartir';
+  $('onRepartir').disabled = n < g.minJug;
+  $('onRepartir').textContent = s.ronda > 0 ? g.otra : g.empezar;
   $('onLobbyWait').hidden = !!ses.host;
   const hayPuntos = s.jugadores.some(j => j.puntos > 0);
   $('onLobbyMarcLbl').hidden = !hayPuntos;
@@ -1550,6 +1681,264 @@ async function otraRonda(){
   finally{ b.disabled = false; b.textContent = 'Otra ronda'; }
 }
 
+/* ---------- hundir la flota ----------
+   El tablero de cada uno vive en el servidor y solo el servidor decide
+   si un tiro es agua o tocado. Aquí abajo no hay ni rastro de la flota
+   del rival: lo único que llega es el resultado de tus propios tiros. */
+
+const LETRAS = 'ABCDEFGHIJ';
+const LARGOS = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
+const celda = (x, y) => LETRAS[x - 1] + y;
+const xy = c => [LETRAS.indexOf(c[0]) + 1, +c.slice(1)];
+
+let fl = { barcos: [], hor: true, enviada: false };
+let flRonda = -1, flBusy = false;
+
+function pintarTab(el, clases, textos){
+  let s = '<span class="tab-h"></span>';
+  for (let x = 1; x <= 10; x++) s += '<span class="tab-h">' + LETRAS[x - 1] + '</span>';
+  for (let y = 1; y <= 10; y++){
+    s += '<span class="tab-h">' + y + '</span>';
+    for (let x = 1; x <= 10; x++){
+      const c = celda(x, y);
+      s += '<button class="tab-c ' + (clases[c] || '') + '" data-c="' + c + '">' +
+           (textos[c] || '') + '</button>';
+    }
+  }
+  el.innerHTML = s;
+}
+
+// Misma regla que comprueba el servidor: ni encima ni al lado, ni en diagonal.
+function cabe(barcos, cs){
+  const ocup = new Set(barcos.flatMap(b => b.celdas));
+  for (const c of cs){
+    const [x, y] = xy(c);
+    if (x < 1 || x > 10 || y < 1 || y > 10) return false;
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++){
+      const nx = x + dx, ny = y + dy;
+      if (nx >= 1 && nx <= 10 && ny >= 1 && ny <= 10 && ocup.has(celda(nx, ny))) return false;
+    }
+  }
+  return true;
+}
+
+const pendientes = () => {
+  const p = LARGOS.slice();
+  fl.barcos.forEach(b => { const i = p.indexOf(b.largo); if (i >= 0) p.splice(i, 1); });
+  return p;
+};
+
+function flotaAlAzar(){
+  for (let vuelta = 0; vuelta < 200; vuelta++){
+    const barcos = []; let bien = true;
+    for (const L of LARGOS){
+      let puesto = false;
+      for (let k = 0; k < 600 && !puesto; k++){
+        const hor = rand(2) === 0;
+        const x = 1 + rand(hor ? 11 - L : 10);
+        const y = 1 + rand(hor ? 10 : 11 - L);
+        const cs = Array.from({length: L}, (_, i) => hor ? celda(x + i, y) : celda(x, y + i));
+        if (cabe(barcos, cs)){ barcos.push({largo: L, celdas: cs}); puesto = true; }
+      }
+      if (!puesto){ bien = false; break; }
+    }
+    if (bien) return barcos;
+  }
+  return null;
+}
+
+function pintarColocar(){
+  const clases = {};
+  fl.barcos.forEach(b => b.celdas.forEach(c => clases[c] = 'barco'));
+  pintarTab($('flColTab'), clases, {});
+
+  const quedan = pendientes();
+  const sig = quedan[0];
+  let marcado = false;
+  const puestos = {};
+  $('flColBarcos').innerHTML = LARGOS.map(L => {
+    const total = fl.barcos.filter(b => b.largo === L).length;
+    puestos[L] = (puestos[L] || 0);
+    let cl = '';
+    if (puestos[L] < total){ cl = ' puesto'; puestos[L]++; }
+    else if (!marcado && L === sig){ cl = ' ahora'; marcado = true; }
+    return '<span class="barco-chip' + cl + '">' + L + '</span>';
+  }).join('');
+
+  $('flGirar').textContent = fl.hor ? 'Horizontal' : 'Vertical';
+  $('flColMarca').innerHTML = fl.enviada
+    ? 'Flota enviada. <b>No se puede cambiar.</b>'
+    : sig
+      ? 'Toca dónde empieza el barco de <b>' + sig + (sig > 1 ? ' casillas' : ' casilla') + '</b>.' +
+        ' Toca uno ya puesto para quitarlo.'
+      : 'Flota completa. Dale a <b>Listo</b>.';
+  $('flListo').disabled = fl.barcos.length < 10 || fl.enviada;
+  ['flGirar','flAzar','flBorrar'].forEach(id => $(id).disabled = fl.enviada);
+}
+
+function tocarColocar(c){
+  if (fl.enviada) return;
+  err('flColocarErr','');
+  const quita = fl.barcos.findIndex(b => b.celdas.includes(c));
+  if (quita >= 0){ fl.barcos.splice(quita, 1); pintarColocar(); return; }
+
+  const L = pendientes()[0];
+  if (!L) return;
+  const [x, y] = xy(c);
+  if (fl.hor ? x + L - 1 > 10 : y + L - 1 > 10){
+    err('flColocarErr', 'Por ahí se sale del tablero. Gíralo o empieza más atrás.');
+    return;
+  }
+  const cs = Array.from({length: L}, (_, i) => fl.hor ? celda(x + i, y) : celda(x, y + i));
+  if (!cabe(fl.barcos, cs)){
+    err('flColocarErr', 'Ahí no cabe: los barcos no pueden tocarse, ni en diagonal.');
+    return;
+  }
+  fl.barcos.push({largo: L, celdas: cs});
+  pintarColocar();
+}
+
+async function enviarFlota(){
+  const b = $('flListo'); b.disabled = true; b.textContent = 'Enviando…'; err('flColocarErr','');
+  try{
+    await rpc('colocar_flota', { p_token: ses.token, p_barcos: fl.barcos });
+    fl.enviada = true;
+    await pollTick();
+  }catch(e){ err('flColocarErr', e.message); }
+  finally{ b.textContent = 'Listo'; pintarColocar(); }
+}
+
+function pintarJugar(t){
+  $('flJugEyebrow').textContent = 'Ronda ' + t.ronda + ' · contra ' + esc(t.rival.nombre || '—');
+
+  const cR = {}, tR = {};
+  t.misTiros.forEach(d => { cR[d.celda] = d.resultado; tR[d.celda] = d.resultado === 'agua' ? '·' : '✕'; });
+  pintarTab($('flTabRival'), cR, tR);
+  $('flTabRival').classList.toggle('quieto', !t.miTurno);
+
+  const cM = {}, tM = {};
+  (t.yo.flota || []).forEach(b => b.celdas.forEach(c => cM[c] = 'barco'));
+  t.susTiros.forEach(d => { cM[d.celda] = d.resultado; tM[d.celda] = d.resultado === 'agua' ? '·' : '✕'; });
+  pintarTab($('flTabMio'), cM, tM);
+
+  $('flTurno').textContent = t.miTurno ? 'Te toca' : 'Espera a ' + (t.rival.nombre || '');
+  $('flTurno').classList.toggle('mio', !!t.miTurno);
+  const dados = t.misTiros.filter(d => d.resultado !== 'agua').length;
+  const recibidos = t.susTiros.filter(d => d.resultado !== 'agua').length;
+  $('flRivalLbl').textContent = 'Aguas del rival · le has dado a ' + dados + ' de 20';
+  if (!$('flMarca').textContent) $('flMarca').innerHTML = 'Te han dado a <b>' + recibidos + ' de 20</b>.';
+}
+
+async function tirar(c){
+  if (flBusy) return;
+  flBusy = true; err('flJugarErr','');
+  try{
+    const r = await rpc('disparar', { p_token: ses.token, p_celda: c });
+    $('flMarca').innerHTML =
+      r.ganada ? '<b>¡Le has hundido la flota entera!</b>'
+      : r.resultado === 'agua' ? 'Agua. Le toca al rival.'
+      : r.resultado === 'hundido' ? '<b>¡Hundido!</b> Vuelves a tirar.'
+      : '<b>¡Tocado!</b> Vuelves a tirar.';
+    await pollTick();
+  }catch(e){ err('flJugarErr', e.message); }
+  finally{ flBusy = false; }
+}
+
+function pintarFlotaFin(t){
+  const gane = t.ganador && t.ganador === t.yo.nombre;
+  const v = $('flVeredicto');
+  v.className = 'veredicto' + (t.ganador ? (gane ? ' equipo' : ' impostores') : '');
+  v.innerHTML = t.ganador
+    ? '<div class="v-lbl">' + (gane ? 'Has ganado' : 'Ha ganado') + '</div>' +
+      '<div class="v-quien">' + esc(t.ganador) + '</div>' +
+      '<div class="v-sub">' + (gane ? 'Le has hundido la flota entera.' : 'Te ha hundido la flota entera.') + '</div>'
+    : '<div class="v-lbl">Partida abandonada</div><div class="v-quien">Sin ganador</div>' +
+      '<div class="v-sub">Nadie se lleva el punto.</div>';
+
+  const marc = [{nombre: t.yo.nombre, puntos: t.yo.puntos}];
+  if (t.rival.nombre) marc.push({nombre: t.rival.nombre, puntos: t.rival.puntos});
+  pintarMarcador($('flMarcador'), marc.sort((a, b) => b.puntos - a.puntos));
+
+  const cM = {}, tM = {};
+  (t.yo.flota || []).forEach(b => b.celdas.forEach(c => cM[c] = 'barco'));
+  t.susTiros.forEach(d => { cM[d.celda] = d.resultado; tM[d.celda] = d.resultado === 'agua' ? '·' : '✕'; });
+  pintarTab($('flTabFin'), cM, tM);
+
+  $('flOtra').hidden = !ses.host;
+  $('flFinWait').hidden = !!ses.host;
+
+  // que la partida acabe también en el historial de este móvil, como el resto
+  const marca = ses.codigo + '#' + t.ronda;
+  if (t.ganador && !onGuardadas[marca]){
+    onGuardadas[marca] = true;
+    history.push({
+      ts: Date.now(), game: 'flota', players: 2, impostors: 0, online: ses.codigo,
+      ganador: t.ganador, gano: 'ganador',
+      roles: marc.map(m => ({ name: m.nombre, imp: false }))
+    });
+    saveHistory(); refreshFile();
+  }
+}
+
+function aplicarFlota(t){
+  if (t.estado === 'lobby'){
+    if (!$('onLobby').classList.contains('is-active')) show('onLobby');
+    const js = [{nombre: t.yo.nombre, orden: 1, puntos: t.yo.puntos, visto: false, voto: false}];
+    if (t.rival.nombre) js.push({nombre: t.rival.nombre, orden: 2, puntos: t.rival.puntos, visto: false, voto: false});
+    pintarLobby({codigo: t.codigo, juego: 'flota', estado: 'lobby', impostores: 1,
+                 ronda: t.ronda, votos: 0, jugadores: js});
+  } else if (t.estado === 'colocando'){
+    if (flRonda !== t.ronda){ flRonda = t.ronda; fl = {barcos: [], hor: true, enviada: false}; $('flMarca').textContent = ''; }
+    if (t.yo.listo){ fl.enviada = true; if (!fl.barcos.length) fl.barcos = t.yo.flota || []; }
+    if (!$('flColocar').classList.contains('is-active')) show('flColocar');
+    $('flColEyebrow').textContent = 'Ronda ' + t.ronda + ' · coloca tu flota';
+    $('flColWait').hidden = !(t.yo.listo && !t.rival.listo);
+    pintarColocar();
+  } else if (t.estado === 'jugando'){
+    if (!$('flJugar').classList.contains('is-active')) show('flJugar');
+    pintarJugar(t);
+  } else if (t.estado === 'terminada'){
+    if (!$('flFin').classList.contains('is-active')) show('flFin');
+    pintarFlotaFin(t);
+  }
+}
+
+async function otraFlota(){
+  const b = $('flOtra'); b.disabled = true; err('flFinErr','');
+  try{ await rpc('repartir', {p_codigo: ses.codigo, p_host_token: ses.host}); await pollTick(); }
+  catch(e){ err('flFinErr', e.message); }
+  finally{ b.disabled = false; }
+}
+
+async function abandonar(){
+  const b = $('flRendirse');
+  if (b.dataset.seguro !== '1'){
+    b.dataset.seguro = '1'; b.textContent = 'Pulsa otra vez para abandonar';
+    setTimeout(() => { b.dataset.seguro = ''; b.textContent = 'Abandonar la partida'; }, 4000);
+    return;
+  }
+  b.dataset.seguro = ''; b.textContent = 'Abandonar la partida';
+  try{ await rpc('terminar', {p_codigo: ses.codigo, p_host_token: ses.host || ses.token}); await pollTick(); }
+  catch(e){ err('flJugarErr', e.message); }
+}
+
+$('flColTab').addEventListener('click', e => {
+  const b = e.target.closest('[data-c]'); if (b) tocarColocar(b.dataset.c);
+});
+$('flTabRival').addEventListener('click', e => {
+  const b = e.target.closest('[data-c]'); if (b) tirar(b.dataset.c);
+});
+$('flGirar').addEventListener('click', () => { fl.hor = !fl.hor; pintarColocar(); });
+$('flBorrar').addEventListener('click', () => { fl.barcos = []; err('flColocarErr',''); pintarColocar(); });
+$('flAzar').addEventListener('click', () => {
+  const b = flotaAlAzar();
+  if (!b){ err('flColocarErr', 'No he sabido colocarla al azar. Inténtalo otra vez.'); return; }
+  fl.barcos = b; err('flColocarErr',''); pintarColocar();
+});
+$('flListo').addEventListener('click', enviarFlota);
+$('flOtra').addEventListener('click', otraFlota);
+$('flRendirse').addEventListener('click', abandonar);
+
 /* ---------- salir ---------- */
 function salirSala(){
   pollStop(); sesClear(); err('juegoErr',''); show('hub');
@@ -1611,7 +2000,8 @@ bindHold($('onRolHold'), verRol);
 $('onRolHide').addEventListener('click', taparRol);
 $('onTerminar').addEventListener('click', terminarRonda);
 $('onOtra').addEventListener('click', otraRonda);
-['onSalir1','onSalir2','onSalir3','onSalir4'].forEach(id => $(id).addEventListener('click', salirSala));
+['onSalir1','onSalir2','onSalir3','onSalir4','flSalir1','flSalir2','flSalir3']
+  .forEach(id => $(id).addEventListener('click', salirSala));
 
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ses && enJuego()) pollTick(); });
 

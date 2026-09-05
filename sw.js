@@ -1,6 +1,6 @@
 /* Cachea la app para que funcione sin cobertura. Sube el número
    de CACHE cada vez que cambies index.html y se actualizará sola. */
-const CACHE = 'sala-v8';
+const CACHE = 'sala-v9';
 const FILES = ['.', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
