@@ -172,6 +172,28 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
 .waiting{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--coolant);text-align:center}
 .waiting::after{content:"";animation:dots 1.4s steps(4,end) infinite}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+.vote{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);
+  background:var(--panel);padding:15px 16px;transition:border-color .12s ease}
+.vote.on{border-color:var(--amber);background:rgba(242,161,59,.15)}
+.vote-name{flex:1;min-width:0;font-size:15px;overflow-wrap:anywhere}
+.vote-tag{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8D9BB0;flex:none}
+.vote.on .vote-tag{color:var(--amber);font-weight:600}
+.marcador{border:1px solid var(--line)}
+.mrow{display:flex;align-items:baseline;gap:12px;padding:11px 14px;border-bottom:1px solid rgba(58,74,96,.5)}
+.mrow:last-child{border-bottom:none}
+.mrow.lider{background:rgba(242,161,59,.12)}
+.mpos{font-family:var(--display);font-size:20px;font-weight:700;color:var(--amber);width:2ch;flex:none}
+.mname{flex:1;min-width:0;font-size:14px;overflow-wrap:anywhere}
+.mname.yo{color:var(--amber);font-weight:600}
+.mpts{font-family:var(--display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
+.veredicto{border:1px solid var(--line);background:var(--panel);padding:20px 16px;text-align:center}
+.veredicto.equipo{background:var(--coolant-deep);border-color:var(--coolant)}
+.veredicto.impostores{background:var(--alert);border-color:var(--alert)}
+.v-lbl{font-size:11px;letter-spacing:.24em;text-transform:uppercase;opacity:.75}
+.v-quien{font-family:var(--display);font-weight:900;font-size:clamp(34px,11vw,62px);line-height:.9;
+  text-transform:uppercase;margin-top:4px;overflow-wrap:anywhere}
+.v-sub{font-size:13px;line-height:1.55;margin-top:10px;opacity:.9}
+.round + .round{margin-top:10px}
 .mini-lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8D9BB0;margin-top:6px}
 
 @media (prefers-reduced-motion:reduce){
@@ -213,7 +235,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
       <span class="game-num">03</span>
       <span>
         <span class="game-name">Partida online</span>
-        <span class="game-desc">Los mismos dos juegos, pero cada uno en su propio móvil. Creas una sala, dictas el código de cuatro letras y el reparto lo hace el servidor: nadie puede espiar el papel de nadie.</span>
+        <span class="game-desc">Tres juegos con cada uno en su propio móvil: los dos de arriba y <b>El intruso</b>. Sala con código, votación al final y marcador que se guarda ronda tras ronda.</span>
         <span class="game-meta">3–15 jugadores · hace falta internet</span>
       </span>
     </button>
@@ -413,7 +435,9 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
       <div class="chips" id="onJuego">
         <button class="chip on" data-j="nave">Tripulantes</button>
         <button class="chip" data-j="impostor">El impostor</button>
+        <button class="chip" data-j="intruso">El intruso</button>
       </div>
+      <p class="note" id="onJuegoDesc" style="margin-top:10px"></p>
     </div>
 
     <div class="stepper">
@@ -491,6 +515,8 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
     <button class="ghost" id="onShare">Compartir el enlace</button>
     <div class="plist" id="onPlayers"></div>
     <p class="note" id="onLobbyNote"></p>
+    <p class="mini-lbl" id="onLobbyMarcLbl" hidden>Marcador de la sala</p>
+    <div class="marcador" id="onLobbyMarc" hidden></div>
     <p class="waiting" id="onLobbyWait" hidden>Esperando al anfitrión</p>
     <div class="err" id="onLobbyErr" hidden></div>
   </div>
@@ -522,12 +548,31 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
   <div class="stack">
     <button class="hold" id="onRolHold"><span class="hold-fill"></span><span class="hold-txt">Mantén pulsado</span></button>
     <button class="ghost" id="onRolHide" hidden>Ocultar</button>
-    <button class="ghost" id="onTerminar" hidden>Cerrar la ronda y destapar</button>
+    <button class="cta" id="onVotacion" hidden>Pasar a la votación</button>
+    <button class="ghost" id="onTerminar" hidden>Destapar sin votar</button>
     <button class="ghost" id="onSalir2">Salir de la sala</button>
   </div>
 </section>
 
-<!-- 11 · ONLINE · DESTAPE -->
+<!-- 11 · ONLINE · VOTACIÓN -->
+<section class="screen" id="onVotar">
+  <div>
+    <p class="eyebrow" id="onVotarEyebrow">Votación</p>
+    <div class="rule"></div>
+  </div>
+  <div class="scroller">
+    <p class="note" id="onVotarNote">¿Quién crees que es? Puedes cambiar tu voto mientras queden votos por llegar.</p>
+    <div class="stack" id="onVotarLista"></div>
+    <p class="waiting" id="onVotarWait" hidden>Faltan votos</p>
+    <div class="err" id="onVotarErr" hidden></div>
+  </div>
+  <div class="stack">
+    <button class="ghost" id="onForzar" hidden>Cerrar sin esperar a los demás</button>
+    <button class="ghost" id="onSalir4">Salir de la sala</button>
+  </div>
+</section>
+
+<!-- 12 · ONLINE · DESTAPE -->
 <section class="screen" id="onFin">
   <div>
     <p class="eyebrow">Se acabó</p>
@@ -535,7 +580,12 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
     <div class="hatch"></div>
   </div>
   <div class="scroller">
+    <div class="veredicto" id="onVeredicto"></div>
     <div class="round" id="onFinRound"></div>
+    <p class="mini-lbl">Marcador de la sala</p>
+    <div class="marcador" id="onMarcador"></div>
+    <button class="ghost" id="onVerHistorial" hidden>Ver las rondas anteriores</button>
+    <div id="onHistorial" hidden></div>
     <p class="note" id="onFinNote"></p>
     <p class="waiting" id="onFinWait" hidden>Esperando al anfitrión</p>
     <div class="err" id="onFinErr" hidden></div>
@@ -829,7 +879,7 @@ function fmt(ts){
   return d.toLocaleDateString('es-ES', {day:'2-digit', month:'short'}) + ' · ' +
          d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
 }
-const gameLabel = g => g === 'impostor' ? 'El impostor' : 'Tripulantes';
+const gameLabel = g => g === 'impostor' ? 'El impostor' : g === 'intruso' ? 'El intruso' : 'Tripulantes';
 
 function lockResults(){
   $('resultsLocked').hidden = false;
@@ -855,14 +905,21 @@ function openResults(){
       const rows = r.roles.map(p =>
         '<div class="result-row' + (p.imp ? ' is-imp' : '') + '">' +
           '<span class="result-name">' + esc(p.name) + '</span>' +
-          '<span class="result-tag">' + (p.imp ? 'Impostor' : (r.game === 'impostor' ? 'Lo sabía' : 'Tripulante')) + '</span>' +
+          '<span class="result-tag">' + (p.imp ? (r.game === 'intruso' ? 'Intruso' : 'Impostor')
+          : r.game === 'impostor' ? 'Lo sabía' : r.game === 'intruso' ? 'Grupo' : 'Tripulante') + '</span>' +
         '</div>').join('');
       const wordLine = r.word
-        ? '<div class="round-word">Palabra: <b>' + esc(r.word) + '</b> · ' + esc(r.cat) + ' · empezó ' + esc(r.starter) + '</div>' : '';
+        ? '<div class="round-word">Palabra: <b>' + esc(r.word) + '</b>' +
+          (r.wordB ? ' · intruso: <b>' + esc(r.wordB) + '</b>' : '') +
+          ' · ' + esc(r.cat) + ' · empezó ' + esc(r.starter) + '</div>' : '';
+      const veredicto = r.gano
+        ? '<div class="round-word">' + (r.expulsado ? 'Fuera <b>' + esc(r.expulsado) + '</b>' : 'Empate') + ' · ' +
+          (r.gano === 'equipo' ? 'ganó el equipo' : r.gano === 'impostores' ? 'ganaron ellos' : 'sin puntos') +
+          '</div>' : '';
       card.innerHTML =
         '<div class="round-head"><span class="round-n">' + n + ' · ' + gameLabel(r.game) + '</span>' +
         '<span class="round-when">' + fmt(r.ts) + '<br>' + r.players + ' jug. · ' + r.impostors + ' imp.</span></div>' +
-        wordLine + '<div class="round-body">' + rows + '</div>';
+        wordLine + veredicto + '<div class="round-body">' + rows + '</div>';
       list.appendChild(card);
     });
   }
@@ -998,6 +1055,7 @@ const SES_KEY = 'sala-de-juegos-online';
 let ses = null;                                   // {codigo, token, host, nombre, juego}
 let onCfg = { juego:'nave', imp:1, cat:'Aleatoria', pista:true };
 let onTimer = null, onBusy = false, onRolData = null, onRondaVista = -1, onGuardadas = {};
+let miVoto = null;
 
 async function rpc(fn, args){
   let r;
@@ -1024,7 +1082,14 @@ function sesSave(){ try{ localStorage.setItem(SES_KEY, JSON.stringify(ses)); }ca
 function sesClear(){ ses = null; onRolData = null; onRondaVista = -1; try{ localStorage.removeItem(SES_KEY); }catch(e){} }
 
 /* ---------- pantalla de crear ---------- */
-const maxImpOn = () => onCfg.juego === 'impostor' ? 2 : 3;
+const maxImpOn = () => onCfg.juego === 'intruso' ? 1 : (onCfg.juego === 'impostor' ? 2 : 3);
+const DESC = {
+  nave: 'Unos cuantos son impostores y se conocen entre ellos. Los demás no saben nada.',
+  impostor: 'Todos ven la misma palabra menos uno, que solo sabe la categoría.',
+  intruso: 'Todos reciben una palabra. A uno le toca otra parecida — y nadie sabe a quién, ni siquiera él.'
+};
+const MALO = j => j === 'intruso' ? 'el intruso' : (j === 'impostor' ? 'el impostor' : 'los impostores');
+const JUEGO = { nave:'Tripulantes', impostor:'El impostor', intruso:'El intruso' };
 
 function pintarCrear(){
   document.querySelectorAll('#onJuego .chip').forEach(c => c.classList.toggle('on', c.dataset.j === onCfg.juego));
@@ -1033,9 +1098,11 @@ function pintarCrear(){
   $('onImpCap').textContent = '1 a ' + maxImpOn();
   $('onImpDown').disabled = onCfg.imp <= 1;
   $('onImpUp').disabled = onCfg.imp >= maxImpOn();
-  const esImp = onCfg.juego === 'impostor';
-  $('onCatWrap').hidden = !esImp;
-  $('onPista').hidden = !esImp;
+  $('onJuegoDesc').textContent = DESC[onCfg.juego];
+  const conPalabras = onCfg.juego === 'impostor' || onCfg.juego === 'intruso';
+  const esImp = conPalabras;
+  $('onCatWrap').hidden = !conPalabras;
+  $('onPista').hidden = onCfg.juego !== 'impostor';
   $('onPista').classList.toggle('on', onCfg.pista);
   if (esImp && !$('onCats').children.length){
     $('onCats').innerHTML = CATS.map(c =>
@@ -1056,7 +1123,7 @@ async function crearSala(){
   try{
     const r = await rpc('crear_partida', {
       p_juego: onCfg.juego, p_impostores: onCfg.imp,
-      p_categoria: onCfg.juego === 'impostor' && onCfg.cat !== 'Aleatoria' ? onCfg.cat : null,
+      p_categoria: onCfg.juego !== 'nave' && onCfg.cat !== 'Aleatoria' ? onCfg.cat : null,
       p_pista: onCfg.pista, p_nombre: nombre
     });
     ses = { codigo:r.codigo, token:r.token, host:r.host_token, nombre:r.nombre, juego:onCfg.juego };
@@ -1085,7 +1152,7 @@ async function entrarSala(){
    Cada 2 s se pregunta al servidor cómo va la sala. Se corta solo si
    el móvil se bloquea o te vas a otra pantalla: no tiene sentido
    gastar batería preguntando por una sala que no estás mirando.     */
-const PANTALLAS = ['onLobby','onRol','onFin'];
+const PANTALLAS = ['onLobby','onRol','onVotar','onFin'];
 const enJuego = () => PANTALLAS.some(id => $(id).classList.contains('is-active'));
 
 function pollStart(){ pollStop(); pollTick(); onTimer = setInterval(pollTick, 2000); }
@@ -1101,7 +1168,10 @@ async function pollTick(){
     if (/No existe esa sala/i.test(e.message)){
       pollStop(); sesClear(); show('onHome');
       err('onHomeErr', 'Esa sala ya no existe. Las salas se borran solas a las 12 horas.');
-    } else err(enJuego() ? ($('onLobby').classList.contains('is-active') ? 'onLobbyErr' : 'onRolErr') : 'onHomeErr', e.message);
+    } else {
+      const destino = ['onLobby','onRol','onVotar','onFin'].find(id => $(id).classList.contains('is-active'));
+      err(destino ? destino + 'Err' : 'onHomeErr', e.message);
+    }
   }
   finally{ onBusy = false; }
 }
@@ -1114,10 +1184,14 @@ function aplicarSala(s){
   } else if (s.estado === 'repartida'){
     pintarSeen(s);
     $('onRolStart').innerHTML = s.empieza ? 'Empieza <b>' + esc(s.empieza) + '</b>.' : '';
-    if (onRondaVista !== s.ronda){ onRondaVista = s.ronda; onRolData = null; taparRol(); cargarRol(); }
+    if (onRondaVista !== s.ronda){ onRondaVista = s.ronda; onRolData = null; miVoto = null; taparRol(); cargarRol(); }
     if (!$('onRol').classList.contains('is-active')) show('onRol');
     $('onRolEyebrow').textContent = 'Ronda ' + s.ronda + ' · sala ' + s.codigo;
+    $('onVotacion').hidden = !ses.host;
     $('onTerminar').hidden = !ses.host;
+  } else if (s.estado === 'votando'){
+    if (!$('onVotar').classList.contains('is-active')) show('onVotar');
+    pintarVotacion(s);
   } else if (s.estado === 'terminada'){
     if (!$('onFin').classList.contains('is-active')){ show('onFin'); cargarFin(); }
     $('onOtra').hidden = !ses.host;
@@ -1128,8 +1202,9 @@ function aplicarSala(s){
 /* ---------- lobby ---------- */
 function pintarLobby(s){
   $('onCodeBig').textContent = s.codigo;
-  $('onLobbyEyebrow').textContent = (s.juego === 'impostor' ? 'El impostor' : 'Tripulantes') +
-    ' · ' + s.impostores + (s.impostores === 1 ? ' impostor' : ' impostores');
+  $('onLobbyEyebrow').textContent = JUEGO[s.juego] + ' · ' +
+    (s.juego === 'intruso' ? '1 intruso'
+      : s.impostores + (s.impostores === 1 ? ' impostor' : ' impostores'));
   $('onPlayers').innerHTML = s.jugadores.map(j =>
     '<div class="result-row' + (j.nombre === ses.nombre ? ' yo' : '') + '">' +
       '<span class="result-name">' + esc(j.nombre) + '</span>' +
@@ -1140,7 +1215,22 @@ function pintarLobby(s){
     (faltan ? '<b>Faltan ' + faltan + ' para poder repartir.</b>' : 'Ya se puede repartir.');
   $('onRepartir').hidden = !ses.host;
   $('onRepartir').disabled = n < 3;
+  $('onRepartir').textContent = s.ronda > 0 ? 'Otra ronda' : 'Repartir';
   $('onLobbyWait').hidden = !!ses.host;
+  const hayPuntos = s.jugadores.some(j => j.puntos > 0);
+  $('onLobbyMarcLbl').hidden = !hayPuntos;
+  $('onLobbyMarc').hidden = !hayPuntos;
+  if (hayPuntos) pintarMarcador($('onLobbyMarc'),
+    s.jugadores.map(j => ({nombre:j.nombre, puntos:j.puntos})).sort((a,b) => b.puntos - a.puntos));
+}
+
+function pintarMarcador(el, marcador){
+  const tope = Math.max(0, ...marcador.map(m => m.puntos));
+  el.innerHTML = marcador.map((m, i) =>
+    '<div class="mrow' + (m.puntos === tope && tope > 0 ? ' lider' : '') + '">' +
+      '<span class="mpos">' + (i + 1) + '</span>' +
+      '<span class="mname' + (m.nombre === ses.nombre ? ' yo' : '') + '">' + esc(m.nombre) + '</span>' +
+      '<span class="mpts">' + m.puntos + '</span></div>').join('');
 }
 
 async function repartir(){
@@ -1172,7 +1262,14 @@ async function verRol(){
   $('onRolKicker').textContent = r.nombre;
 
   const big = $('onRolName');
-  if (r.juego === 'nave'){
+  if (r.juego === 'intruso'){
+    // Aquí no se dice ni de lejos si le ha tocado la palabra rara: esa
+    // duda es el juego entero. El servidor tampoco lo manda.
+    box.classList.remove('imp'); box.classList.remove('crew');
+    big.textContent = r.palabra;
+    $('onRolSub').textContent = 'Categoría: ' + String(r.categoria || '').toLowerCase() +
+      '. Puede que a alguien le haya tocado otra parecida. Da pistas y averigua si eres tú.';
+  } else if (r.juego === 'nave'){
     big.textContent = r.impostor ? 'Impostor' : 'Tripulante';
     $('onRolSub').textContent = r.impostor
       ? 'Sabotea, elimina y miente. Que no te pillen.'
@@ -1210,6 +1307,35 @@ function pintarSeen(s){
       '<span class="result-tag">' + (j.visto ? 'ya lo ha visto' : 'esperando') + '</span></div>').join('');
 }
 
+function pintarVotacion(s){
+  $('onVotarEyebrow').textContent = 'Votación · ronda ' + s.ronda + ' · sala ' + s.codigo;
+  $('onVotarLista').innerHTML = s.jugadores.filter(j => j.nombre !== ses.nombre).map(j =>
+    '<button class="vote' + (miVoto === j.orden ? ' on' : '') + '" data-orden="' + j.orden + '">' +
+      '<span class="vote-name">' + esc(j.nombre) + '</span>' +
+      '<span class="vote-tag">' + (miVoto === j.orden ? 'tu voto' : (j.voto ? 'ya ha votado' : '')) + '</span>' +
+    '</button>').join('');
+  const n = s.jugadores.length;
+  $('onVotarNote').innerHTML = (miVoto
+    ? 'Puedes cambiarlo hasta que llegue el último voto. '
+    : '¿Quién crees que es ' + MALO(s.juego) + '? ') +
+    'Han votado <b>' + s.votos + ' de ' + n + '</b>.';
+  $('onVotarWait').hidden = !miVoto || s.votos >= n;
+  $('onForzar').hidden = !ses.host;
+}
+
+async function abrirVotacion(){
+  const b = $('onVotacion'); b.disabled = true; err('onRolErr','');
+  try{ await rpc('votacion', { p_codigo: ses.codigo, p_host_token: ses.host }); await pollTick(); }
+  catch(e){ err('onRolErr', e.message); }
+  finally{ b.disabled = false; }
+}
+
+async function emitirVoto(orden){
+  err('onVotarErr','');
+  try{ await rpc('votar', { p_token: ses.token, p_orden: orden }); miVoto = orden; await pollTick(); }
+  catch(e){ err('onVotarErr', e.message); }
+}
+
 async function terminarRonda(){
   const b = $('onTerminar'); b.disabled = true; err('onRolErr','');
   try{ await rpc('terminar', { p_codigo: ses.codigo, p_host_token: ses.host }); await pollTick(); }
@@ -1218,27 +1344,65 @@ async function terminarRonda(){
 }
 
 /* ---------- destape ---------- */
+function tarjetaRonda(r){
+  const malo = r.juego === 'intruso' ? 'Intruso' : 'Impostor';
+  const limpio = r.juego === 'nave' ? 'Tripulante' : r.juego === 'intruso' ? 'Grupo' : 'Lo sabía';
+  const rows = (r.jugadores || []).map(j =>
+    '<div class="result-row' + (j.impostor ? ' is-imp' : '') + '">' +
+      '<span class="result-name">' + esc(j.nombre) +
+        (j.voto_a ? ' <span class="result-tag">votó a ' + esc(j.voto_a) + '</span>' : '') + '</span>' +
+      '<span class="result-tag">' + (j.impostor ? malo : limpio) +
+        (j.recibidos ? ' · ' + j.recibidos + (j.recibidos === 1 ? ' voto' : ' votos') : '') + '</span>' +
+    '</div>').join('');
+  const palabras = r.juego === 'intruso'
+    ? 'El grupo: <b>' + esc(r.palabra) + '</b> · ' + malo.toLowerCase() + ': <b>' + esc(r.palabra_b) + '</b>'
+    : (r.palabra ? 'Palabra: <b>' + esc(r.palabra) + '</b>' : '');
+  const linea = palabras ? '<div class="round-word">' + palabras +
+    (r.categoria ? ' · ' + esc(r.categoria) : '') + '</div>' : '';
+  return '<div class="round"><div class="round-head">' +
+    '<span class="round-n">Ronda ' + r.ronda + '</span>' +
+    '<span class="round-when">' + (r.expulsado ? 'fuera ' + esc(r.expulsado) : 'empate') + '<br>' +
+    (r.gano === 'equipo' ? 'ganó el equipo' : r.gano === 'impostores' ? 'ganaron ellos' : 'sin puntos') +
+    '</span></div>' + linea + '<div class="round-body">' + rows + '</div></div>';
+}
+
 async function cargarFin(){
   try{
     const r = await rpc('resultados', { p_codigo: ses.codigo });
     err('onFinErr','');
-    const rows = r.jugadores.map(j =>
-      '<div class="result-row' + (j.impostor ? ' is-imp' : '') + '">' +
-        '<span class="result-name">' + esc(j.nombre) + '</span>' +
-        '<span class="result-tag">' + (j.impostor ? 'Impostor' : (r.juego === 'impostor' ? 'Lo sabía' : 'Tripulante')) + '</span>' +
-      '</div>').join('');
-    const linea = r.palabra
-      ? '<div class="round-word">Palabra: <b>' + esc(r.palabra) + '</b> · ' + esc(r.categoria) + ' · empezó ' + esc(r.empieza) + '</div>'
-      : (r.empieza ? '<div class="round-word">Empezó <b>' + esc(r.empieza) + '</b></div>' : '');
-    $('onFinRound').innerHTML =
-      '<div class="round-head"><span class="round-n">Sala ' + esc(ses.codigo) + '</span>' +
-      '<span class="round-when">Ronda ' + r.ronda + '<br>' + r.jugadores.length + ' jug.</span></div>' +
-      linea + '<div class="round-body">' + rows + '</div>';
+    const malo = MALO(r.juego);
+    const v = $('onVeredicto');
+    v.className = 'veredicto' + (r.gano === 'equipo' ? ' equipo' : r.gano === 'impostores' ? ' impostores' : '');
+    v.innerHTML = r.expulsado
+      ? '<div class="v-lbl">Expulsado</div><div class="v-quien">' + esc(r.expulsado) + '</div>' +
+        '<div class="v-sub">' + (r.gano === 'equipo'
+          ? 'Era ' + malo + '. Gana el equipo: un punto para cada uno.'
+          : 'Era inocente. ' + (r.juego === 'intruso' ? 'Gana el intruso' : 'Ganan los impostores') + ': dos puntos.') + '</div>'
+      : '<div class="v-lbl">Sin expulsión</div><div class="v-quien">Empate</div>' +
+        '<div class="v-sub">Nadie se lleva puntos esta ronda.</div>';
+    $('onFinRound').outerHTML = tarjetaRonda(r).replace('<div class="round">', '<div class="round" id="onFinRound">');
+    pintarMarcador($('onMarcador'), r.marcador || []);
+    $('onVerHistorial').hidden = r.ronda < 2;
+    $('onHistorial').hidden = true;
+    $('onVerHistorial').textContent = 'Ver las rondas anteriores';
     $('onFinNote').innerHTML = ses.host
-      ? 'Puedes lanzar otra ronda con la misma gente: se vuelve a sortear todo desde cero.'
-      : 'La ronda ha terminado. Si el anfitrión lanza otra, tu papel aparecerá solo.';
+      ? 'Otra ronda vuelve a sortearlo todo desde cero. Los puntos se conservan.'
+      : 'Si el anfitrión lanza otra ronda, tu papel aparecerá solo.';
     guardarRonda(r);
   }catch(e){ err('onFinErr', e.message); }
+}
+
+async function verHistorial(){
+  const box = $('onHistorial'), btn = $('onVerHistorial');
+  if (!box.hidden){ box.hidden = true; btn.textContent = 'Ver las rondas anteriores'; return; }
+  btn.disabled = true;
+  try{
+    const hs = await rpc('historial', { p_codigo: ses.codigo });
+    box.innerHTML = hs.rondas.slice(1).map(tarjetaRonda).join('') ||
+      '<p class="empty">Esta es la primera ronda de la sala.</p>';
+    box.hidden = false; btn.textContent = 'Ocultar las rondas';
+  }catch(e){ err('onFinErr', e.message); }
+  finally{ btn.disabled = false; }
 }
 
 /* Las partidas online también van al historial de este móvil, que es
@@ -1253,6 +1417,8 @@ function guardarRonda(r){
     roles: r.jugadores.map(j => ({ name: j.nombre, imp: !!j.impostor })), online: ses.codigo
   };
   if (r.palabra){ entry.word = r.palabra; entry.cat = r.categoria; entry.starter = r.empieza; }
+  if (r.palabra_b) entry.wordB = r.palabra_b;
+  entry.gano = r.gano; entry.expulsado = r.expulsado;
   history.push(entry); saveHistory(); refreshFile();
 }
 
@@ -1312,11 +1478,18 @@ $('onCodigo').addEventListener('input', e => {
 
 $('onShare').addEventListener('click', compartir);
 $('onRepartir').addEventListener('click', repartir);
+$('onVotacion').addEventListener('click', abrirVotacion);
+$('onForzar').addEventListener('click', terminarRonda);
+$('onVerHistorial').addEventListener('click', verHistorial);
+$('onVotarLista').addEventListener('click', e => {
+  const b = e.target.closest('.vote'); if (!b) return;
+  emitirVoto(+b.dataset.orden);
+});
 bindHold($('onRolHold'), verRol);
 $('onRolHide').addEventListener('click', taparRol);
 $('onTerminar').addEventListener('click', terminarRonda);
 $('onOtra').addEventListener('click', otraRonda);
-['onSalir1','onSalir2','onSalir3'].forEach(id => $(id).addEventListener('click', salirSala));
+['onSalir1','onSalir2','onSalir3','onSalir4'].forEach(id => $(id).addEventListener('click', salirSala));
 
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ses && enJuego()) pollTick(); });
 
