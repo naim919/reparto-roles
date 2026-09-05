@@ -322,6 +322,18 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
       <p class="note" id="ppVelNota" style="margin-top:8px"></p>
     </div>
 
+    <div class="stepper">
+      <div class="stepper-head"><span class="stepper-label">Variante</span></div>
+      <div class="chips" id="ppModos"></div>
+      <p class="note" id="ppModoNota" style="margin-top:8px"></p>
+    </div>
+
+    <div class="stepper">
+      <div class="stepper-head"><span class="stepper-label">Rival</span></div>
+      <div class="chips" id="ppRivales"></div>
+      <p class="note" id="ppRivalNota" style="margin-top:8px"></p>
+    </div>
+
     <button class="toggle" id="ppSonido">
       <span class="toggle-txt">Sonido<small>Rebotes, palas y gol.</small></span>
       <span class="switch"></span>
@@ -519,6 +531,14 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
         <button class="bump" id="onImpUp">+</button>
       </div>
       <p class="note" id="onImpNota" style="margin-top:8px"></p>
+    </div>
+
+    <div id="onPPWrap" hidden>
+      <div class="stepper">
+        <div class="stepper-head"><span class="stepper-label">Variante</span></div>
+        <div class="chips" id="onPPModos"></div>
+        <p class="note" id="onPPNota" style="margin-top:8px"></p>
+      </div>
     </div>
 
     <div id="onFlotaWrap" hidden>
@@ -897,7 +917,7 @@ const JUEGOS = {
 };
 /* Sube con la versión de sw.js, siempre a la vez. Sale en el índice
    para poder distinguir de un vistazo la app de una copia en caché. */
-const VERSION = 'v13';
+const VERSION = 'v14';
 const J = j => JUEGOS[j] || JUEGOS.nave;
 // el panel manda el número, no el orden en que estén escritos aquí
 const catalogo = () => Object.entries(JUEGOS).filter(([, g]) => !g.oculto)
@@ -1391,7 +1411,25 @@ const PPVELS = {
   normal:  { nombre:'Normal',  v:0.78, nota:'El punto justo: se puede seguir la bola sin despeinarse.' },
   rapida:  { nombre:'Rápida',  v:1.05, nota:'Reflejos. La bola se acelera además con cada golpe.' }
 };
-const ppCfg = { meta: 7, vel: 'normal' };
+const PPMODOS = {
+  clasica: { nombre:'Clásica',
+    nota:'La de siempre: la bola gana un poco de velocidad con cada golpe y ahí se queda.' },
+  rapida:  { nombre:'Rápida',
+    nota:'Además acelera sola mientras dura el punto. No hay peloteo eterno que valga.' },
+  encogen: { nombre:'Palas que encogen',
+    nota:'Cada golpe estrecha un poco tu pala. Vuelve a su tamaño al empezar el punto siguiente.' }
+};
+const PPRIVALES = {
+  humano:  { nombre:'Otra persona' },
+  /* `error` va en MEDIAS PALAS. Para que el móvil llegue a fallar, el
+     desvío tiene que pasar de media pala más el radio de la bola, que
+     son 1,27 medias palas: por debajo de eso es matemáticamente
+     imbatible y no hay partida. */
+  facil:   { nombre:'Móvil fácil',   vel:0.45, error:2.60 },
+  normal:  { nombre:'Móvil normal',  vel:0.90, error:1.75 },
+  dificil: { nombre:'Móvil difícil', vel:1.50, error:1.32 }
+};
+const ppCfg = { meta: 7, vel: 'normal', modo: 'clasica', rival: 'humano' };
 let pp = null;
 
 function pintarPP(){
@@ -1409,7 +1447,30 @@ function pintarPP(){
   document.querySelectorAll('#ppVels .chip')
     .forEach(c => c.classList.toggle('on', c.dataset.v === ppCfg.vel));
   $('ppVelNota').textContent = PPVELS[ppCfg.vel].nota;
+
+  chips('ppModos', PPMODOS, 'm', ppCfg.modo, k => { ppCfg.modo = k; pintarPP(); });
+  $('ppModoNota').textContent = PPMODOS[ppCfg.modo].nota;
+
+  chips('ppRivales', PPRIVALES, 'r', ppCfg.rival, k => { ppCfg.rival = k; pintarPP(); });
+  $('ppRivalNota').textContent = ppCfg.rival === 'humano'
+    ? 'Dos personas en este móvil, una a cada lado.'
+    : 'Juegas tú abajo; la pala de arriba la lleva el móvil. En difícil falla poco.';
+
   $('ppSonido').classList.toggle('on', sonidoOn);
+}
+
+// pinta una fila de opciones y la deja cableada una sola vez
+function chips(id, tabla, attr, actual, alElegir){
+  const caja = $(id);
+  if (!caja.children.length){
+    caja.innerHTML = Object.entries(tabla).map(([k, v]) =>
+      '<button class="chip" data-' + attr + '="' + k + '">' + v.nombre + '</button>').join('');
+    caja.addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if (!b) return;
+      alElegir(b.dataset[attr]);
+    });
+  }
+  caja.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset[attr] === actual));
 }
 
 /* El lienzo puede medir 0x0 todavía: la pantalla acaba de aparecer y no
@@ -1443,7 +1504,8 @@ function ppEscala(){
 function ppAjustar(){
   if (!pp.medido || !(pp.ar > 0)) return;
   ppEscala();
-  pp.palaW = Math.min(.34 * pp.ar, .30);
+  pp.palaW = pp.anchoBase = Math.min(.34 * pp.ar, .30);
+  if (!(pp.anchos.abajo > 0)) pp.anchos = { arriba: pp.anchoBase, abajo: pp.anchoBase };
   const centro = pp.ar / 2;
   if (!(pp.palas.abajo > 0)){ pp.palas.arriba = pp.palas.abajo = centro; }
   if (!(pp.bola.x > 0)) pp.bola.x = centro;
@@ -1454,7 +1516,7 @@ function ppNueva(modo){
     modo: modo || (pp && pp.modo) || 'local',
     ctx: $('ppLienzo').getContext('2d'),
     marcador: { arriba: 0, abajo: 0 },
-    palaW: 0, palaH: 0.016, r: 0.021,
+    palaW: 0, anchoBase: 0, anchos: { arriba: 0, abajo: 0 }, palaH: 0.016, r: 0.021,
     palas: { arriba: 0, abajo: 0 },
     bola: { x: 0, y: .5, vx: 0, vy: 0 },
     base: PPVELS[ppCfg.vel].v,
@@ -1463,6 +1525,10 @@ function ppNueva(modo){
     dest: null, tEnvio: 0, red: 'unido', ronda: 0
   };
   pp.miPala = pp.modo === 'invitado' ? 'arriba' : 'abajo';
+  if (pp.modo === 'local' && ppCfg.rival !== 'humano'){
+    const r = PPRIVALES[ppCfg.rival];
+    pp.ia = { vel: r.vel, error: r.error, desvio: 0 };
+  }
   ppMedidas(); ppAjustar();
   ppSacar('abajo');
 }
@@ -1472,6 +1538,9 @@ function ppSacar(hacia){
   pp.hacia = hacia;
   pp.bola.x = pp.ar / 2; pp.bola.y = .5;
   if (!pp.medido) return;
+  // cada punto empieza de cero: velocidad base y palas enteras
+  pp.anchos = { arriba: pp.anchoBase, abajo: pp.anchoBase };
+  if (pp.ia) pp.ia.desvio = (rand(2001) / 1000 - 1) * pp.ia.error * (pp.anchos.arriba / 2);
   const ang = (rand(1000) / 1000 - .5) * 1.2;     // ±35° de la vertical
   const v = pp.base;
   pp.bola.vx = Math.sin(ang) * v;
@@ -1481,7 +1550,7 @@ function ppSacar(hacia){
 
 function ppGolpe(lado){
   const b = pp.bola, px = pp.palas[lado];
-  const off = Math.max(-1, Math.min(1, (b.x - px) / (pp.palaW / 2)));
+  const off = Math.max(-1, Math.min(1, (b.x - px) / (pp.anchos[lado] / 2)));
   const v = Math.min(pp.base * 2, Math.hypot(b.vx, b.vy) * 1.035);
   const ang = off * 1.0;                          // hasta ~57°
   b.vx = Math.sin(ang) * v;
@@ -1494,6 +1563,10 @@ function ppGolpe(lado){
   }
   b.y = lado === 'abajo' ? .93 - pp.palaH / 2 - pp.r - .001
                           : .07 + pp.palaH / 2 + pp.r + .001;
+  // en "palas que encogen", quien golpea se queda con menos pala
+  if (ppCfg.modo === 'encogen')
+    pp.anchos[lado] = Math.max(pp.anchoBase * .38, pp.anchos[lado] * .90);
+  if (pp.ia) pp.ia.desvio = (rand(2001) / 1000 - 1) * pp.ia.error * (pp.anchos.arriba / 2);
   sonar('pala');
 }
 
@@ -1506,9 +1579,9 @@ function ppMover(dt){
 
   const yAb = .93, yAr = .07;
   if (b.vy > 0 && b.y + pp.r >= yAb - pp.palaH / 2 && b.y - pp.r <= yAb + pp.palaH / 2
-      && Math.abs(b.x - pp.palas.abajo) <= pp.palaW / 2 + pp.r) ppGolpe('abajo');
+      && Math.abs(b.x - pp.palas.abajo) <= pp.anchos.abajo / 2 + pp.r) ppGolpe('abajo');
   if (b.vy < 0 && b.y - pp.r <= yAr + pp.palaH / 2 && b.y + pp.r >= yAr - pp.palaH / 2
-      && Math.abs(b.x - pp.palas.arriba) <= pp.palaW / 2 + pp.r) ppGolpe('arriba');
+      && Math.abs(b.x - pp.palas.arriba) <= pp.anchos.arriba / 2 + pp.r) ppGolpe('arriba');
 
   if (b.y < -pp.r * 2){ ppPunto('abajo'); }
   else if (b.y > 1 + pp.r * 2){ ppPunto('arriba'); }
@@ -1561,7 +1634,8 @@ function ppRed(dt){
     const b = pp.bola;
     rtDifundir('e', { ar:+pp.ar.toFixed(4),
       x:+b.x.toFixed(4), y:+b.y.toFixed(4), vx:+b.vx.toFixed(3), vy:+b.vy.toFixed(3),
-      pb:+pp.palas.abajo.toFixed(4), ma:pp.marcador.arriba, mb:pp.marcador.abajo,
+      pb:+pp.palas.abajo.toFixed(4), wa:+pp.anchos.arriba.toFixed(4), wb:+pp.anchos.abajo.toFixed(4),
+      ma:pp.marcador.arriba, mb:pp.marcador.abajo,
       s:pp.estado, c:pp.cuenta, m:ppCfg.meta, g:pp.ganador || null });
   } else {
     rtDifundir('p', { p:+pp.palas.arriba.toFixed(4) });
@@ -1571,7 +1645,7 @@ function ppRed(dt){
 function ppRecibir(evento, d){
   if (!pp || !d) return;
   if (evento === 'p' && pp.modo === 'anfitrion'){
-    pp.palas.arriba = Math.max(pp.palaW/2, Math.min(pp.ar - pp.palaW/2, d.p));
+    pp.palas.arriba = Math.max(pp.anchos.arriba/2, Math.min(pp.ar - pp.anchos.arriba/2, d.p));
     pp.tRival = performance.now(); pp.mudo = false;
     return;
   }
@@ -1580,6 +1654,7 @@ function ppRecibir(evento, d){
     pp.dest = { x:d.x, y:d.y, vx:d.vx, vy:d.vy, t: performance.now() };
     if (!pp.arrancado){ pp.bola.x = d.x; pp.bola.y = d.y; pp.arrancado = true; }
     pp.palas.abajo = d.pb;                       // la del rival; la mía es mía
+    if (d.wa){ pp.anchos.arriba = d.wa; pp.anchos.abajo = d.wb; }
     const antes = pp.marcador.arriba + pp.marcador.abajo;
     pp.marcador.arriba = d.ma; pp.marcador.abajo = d.mb;
     if (d.ma + d.mb > antes) sonar('gol');
@@ -1603,11 +1678,33 @@ function ppPaso(dt){
     return;
   }
   if (pp.estado !== 'juega') return;
+
+  // en "rápida" la bola no para de ganar velocidad mientras dura el
+  // punto: un 9 % por segundo, así no hay peloteo eterno
+  if (ppCfg.modo === 'rapida'){
+    const b = pp.bola, v = Math.hypot(b.vx, b.vy);
+    const nv = Math.min(pp.base * 2.6, v * (1 + .09 * dt));
+    if (v > 0){ b.vx = b.vx / v * nv; b.vy = b.vy / v * nv; }
+  }
+  if (pp.ia) ppIA(dt);
+
   // a trozos pequeños: con la bola acelerada, un salto grande la
   // colaría a través de la pala sin tocarla
   const v = Math.hypot(pp.bola.vx, pp.bola.vy);
   const trozos = Math.max(1, Math.ceil(v * dt / (pp.r * .5)));
   for (let i = 0; i < trozos && pp.estado === 'juega'; i++) ppMover(dt / trozos);
+}
+
+/* La pala del móvil. Solo se mueve cuando la bola viene hacia ella, con
+   un tope de velocidad y un desvío que se resortea en cada golpe: sin
+   ese desvío no fallaría nunca y no habría partida. */
+function ppIA(dt){
+  const b = pp.bola;
+  const objetivo = b.vy < 0 ? b.x + (pp.ia.desvio || 0) : pp.ar / 2;
+  const paso = pp.ia.vel * dt;
+  const d = Math.max(-paso, Math.min(paso, objetivo - pp.palas.arriba));
+  const w = pp.anchos.arriba;
+  pp.palas.arriba = Math.max(w / 2, Math.min(pp.ar - w / 2, pp.palas.arriba + d));
 }
 
 function ppPintar(){
@@ -1634,15 +1731,15 @@ function ppPintar(){
   marcador(pp.marcador.arriba, H * .27, true, '#2E9E92');
   marcador(pp.marcador.abajo, H * .73, false, '#F2A13B');
 
-  const pala = (x, y, color) => {
+  const pala = (x, y, color, ancho) => {
     c.fillStyle = color;
-    const w = pp.palaW * e, hh = pp.palaH * e;
+    const w = ancho * e, hh = pp.palaH * e;
     c.beginPath();
     c.roundRect(x * e - w / 2, y * e - hh / 2, w, hh, hh / 2);
     c.fill();
   };
-  pala(pp.palas.arriba, .07, '#2E9E92');
-  pala(pp.palas.abajo, .93, '#F2A13B');
+  pala(pp.palas.arriba, .07, '#2E9E92', pp.anchos.arriba);
+  pala(pp.palas.abajo, .93, '#F2A13B', pp.anchos.abajo);
 
   if (pp.estado !== 'fin'){
     c.fillStyle = '#E8E4DA';
@@ -1658,17 +1755,19 @@ function ppPintar(){
   };
   if (pp.estado === 'saque' && pp.cuenta > 0) centrado(String(pp.cuenta), .12, 0, false, .8);
   if (pp.estado === 'fin'){
-    const gana = pp.modo === 'local'
-      ? (pp.ganador === 'abajo' ? 'ABAJO' : 'ARRIBA')
-      : (pp.ganador === pp.miPala ? 'HAS GANADO' : 'HA GANADO EL RIVAL');
-    const titulo = pp.modo === 'local' ? 'GANA ' + gana : gana;
+    const gana = pp.modo !== 'local'
+      ? (pp.ganador === pp.miPala ? 'HAS GANADO' : 'HA GANADO EL RIVAL')
+      : pp.ia
+        ? (pp.ganador === 'abajo' ? 'HAS GANADO' : 'GANA EL MÓVIL')
+        : (pp.ganador === 'abajo' ? 'ABAJO' : 'ARRIBA');
+    const titulo = (pp.modo === 'local' && !pp.ia) ? 'GANA ' + gana : gana;
     const mios = pp.marcador[pp.miPala], suyos = pp.marcador[pp.miPala === 'abajo' ? 'arriba' : 'abajo'];
     centrado(titulo, .06, -e * .05, false, .95);
     centrado(pp.modo === 'local' ? pp.marcador.arriba + ' – ' + pp.marcador.abajo : mios + ' – ' + suyos,
              .06, e * .02, false, .55);
     if (pp.modo === 'local'){
       centrado('TOCA PARA OTRA', .035, e * .09, false, .45);
-      centrado('GANA ' + gana, .06, e * .05, true, .95);
+      if (!pp.ia) centrado('GANA ' + gana, .06, e * .05, true, .95);
     }
   }
   c.setTransform(1, 0, 0, 1, 0, 0);
@@ -1717,6 +1816,7 @@ function aplicarPong(s){
     pintarLobby(s);
     return;
   }
+  if (s.flota && s.flota.indexOf('pp_') === 0) ppCfg.modo = s.flota.slice(3);
   if (s.estado === 'jugando'){
     if (!pp || pp.ronda !== s.ronda){
       ppArrancar(ses.host ? 'anfitrion' : 'invitado');
@@ -1737,14 +1837,15 @@ function aplicarPong(s){
 }
 
 function ppLado(e){
-  if (pp.modo !== 'local') return pp.miPala;        // en red solo tienes una pala
+  if (pp.modo !== 'local' || pp.ia) return pp.miPala;   // en red o contra el móvil, solo la tuya
   const y = ((e.clientY - pp.rect.top) * pp.dpr - pp.offY) / pp.esc;
   return y < .5 ? 'arriba' : 'abajo';
 }
 function ppArrastrar(lado, e){
   let x = ((e.clientX - pp.rect.left) * pp.dpr - pp.offX) / pp.esc;
   if (pp.modo === 'invitado') x = pp.ar - x;             // su pantalla va girada
-  pp.palas[lado] = Math.max(pp.palaW / 2, Math.min(pp.ar - pp.palaW / 2, x));
+  const w = pp.anchos[lado];
+  pp.palas[lado] = Math.max(w / 2, Math.min(pp.ar - w / 2, x));
 }
 
 (function(){
@@ -1928,6 +2029,11 @@ function pintarCrear(){
   const esImp = conPalabras;
   $('onCatWrap').hidden = !conPalabras;
   $('onPista').hidden = !g.pista;
+  $('onPPWrap').hidden = onCfg.juego !== 'pingpong';
+  if (onCfg.juego === 'pingpong'){
+    chips('onPPModos', PPMODOS, 'm', ppCfg.modo, k => { ppCfg.modo = k; pintarCrear(); });
+    $('onPPNota').textContent = PPMODOS[ppCfg.modo].nota;
+  }
   $('onFlotaWrap').hidden = onCfg.juego !== 'flota';
   if (onCfg.juego === 'flota'){
     if (!$('onFlotas').children.length){
@@ -1969,7 +2075,8 @@ async function crearSala(){
     const r = await rpc('crear_partida', {
       p_juego: onCfg.juego, p_impostores: onCfg.imp,
       p_categoria: onCfg.juego !== 'nave' && onCfg.cat !== 'Aleatoria' ? onCfg.cat : null,
-      p_pista: onCfg.pista, p_nombre: nombre, p_flota: onCfg.flota
+      p_pista: onCfg.pista, p_nombre: nombre,
+      p_flota: onCfg.juego === 'pingpong' ? 'pp_' + ppCfg.modo : onCfg.flota
     });
     ses = { codigo:r.codigo, token:r.token, host:r.host_token, nombre:r.nombre, juego:onCfg.juego };
     sesSave(); onRondaVista = -1; onRolData = null;
