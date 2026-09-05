@@ -225,6 +225,14 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
 .barco-chip.ahora{background:var(--amber);color:var(--hull);border-color:var(--amber);font-weight:600}
 .marca{font-size:12px;color:#8D9BB0;line-height:1.5;text-align:center;min-height:1.4em}
 .marca b{color:var(--ceramic)}
+/* ---------- ping pong ---------- */
+#ppJugar{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);max-width:none;background:var(--noche)}
+#ppLienzo{flex:1;width:100%;min-height:0;display:block;touch-action:none}
+/* En la raya de en medio a propósito: arriba estorbaba justo donde
+   arrastra el jugador de esa mitad, y se salía de la partida sin querer. */
+.pp-salir{position:absolute;top:50%;right:6px;transform:translateY(-50%);
+  border:1px solid var(--line);background:rgba(20,28,38,.9);color:#8D9BB0;
+  padding:9px 10px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;z-index:2}
 .sello{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#5F708A;text-align:center}
 .mini-lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8D9BB0;margin-top:6px}
 
@@ -278,6 +286,53 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
     <button class="ghost" id="modoEntrar">Unirme con un código</button>
     <button class="ghost" data-back="hub">Volver</button>
   </div>
+</section>
+
+<!-- 1C · AJUSTES PING PONG -->
+<section class="screen" id="setupPP">
+  <div>
+    <p class="eyebrow">Juego 04 · Ping pong · un solo móvil</p>
+    <h1>Uno a<br>cada<span>lado</span></h1>
+    <div class="hatch"></div>
+  </div>
+
+  <div class="scroller">
+    <p class="note">Deja el móvil plano en la mesa y sentaos enfrente. Cada uno arrastra el dedo por su mitad. <b>Podéis tocar los dos a la vez.</b></p>
+
+    <div class="stepper">
+      <div class="stepper-head">
+        <span class="stepper-label">Puntos para ganar</span>
+        <span class="stepper-cap">3 – 21</span>
+      </div>
+      <div class="stepper-row">
+        <button class="bump" data-act="g-">–</button>
+        <span class="stepper-val" id="ppMeta">7</span>
+        <button class="bump" data-act="g+">+</button>
+      </div>
+    </div>
+
+    <div class="stepper">
+      <div class="stepper-head"><span class="stepper-label">Velocidad</span></div>
+      <div class="chips" id="ppVels"></div>
+      <p class="note" id="ppVelNota" style="margin-top:8px"></p>
+    </div>
+
+    <button class="toggle" id="ppSonido">
+      <span class="toggle-txt">Sonido<small>Rebotes, palas y gol.</small></span>
+      <span class="switch"></span>
+    </button>
+  </div>
+
+  <div class="stack">
+    <button class="cta" id="ppEmpezar">Jugar</button>
+    <button class="ghost" data-back="juego">Volver</button>
+  </div>
+</section>
+
+<!-- 1D · PING PONG -->
+<section class="screen" id="ppJugar">
+  <canvas id="ppLienzo"></canvas>
+  <button class="pp-salir" id="ppSalir">Salir</button>
 </section>
 
 <!-- 1A · AJUSTES SABOTAJE -->
@@ -815,6 +870,15 @@ const JUEGOS = {
     reglas: 'Se reparten tripulantes y saboteadores. Los saboteadores se conocen entre ellos; los tripulantes no saben nada de nadie. A partir de ahí el juego ocurre en la mesa: la app reparte los papeles y luego recoge la votación.',
     minJug: 3, maxJug: 15, maxImp: 3, palabras: false, pista: false
   },
+  pingpong: {
+    num: '04', nombre: 'Ping pong', h1: 'Ping<span>pong</span>',
+    setup: 'setupPP', soloLocal: true, malo: 'rival', malos: 'rivales', limpio: '',
+    empezar: 'Jugar', otra: 'Otra partida',
+    corta: 'Un móvil en la mesa y uno a cada lado. Palas arriba y abajo, y a no dejar pasar la bola.',
+    reglas: 'El teléfono se deja plano en la mesa y os sentáis enfrente. Cada uno arrastra el dedo por su mitad para mover su pala. La bola rebota en las paredes de los lados y se acelera cada vez que la golpeáis. Si se te cuela por detrás, punto para el otro.',
+    detalle: 'Dos jugadores en el mismo móvil, sin internet. Podéis tocar los dos a la vez: el móvil sigue un dedo por cada mitad.',
+    minJug: 2, maxJug: 2, maxImp: 1, palabras: false, pista: false
+  },
   intruso: {
     oculto: true,
     num: '03', nombre: 'El intruso', h1: 'El<span>intruso</span>',
@@ -826,7 +890,7 @@ const JUEGOS = {
 };
 /* Sube con la versión de sw.js, siempre a la vez. Sale en el índice
    para poder distinguir de un vistazo la app de una copia en caché. */
-const VERSION = 'v11';
+const VERSION = 'v12';
 const J = j => JUEGOS[j] || JUEGOS.nave;
 // el panel manda el número, no el orden en que estén escritos aquí
 const catalogo = () => Object.entries(JUEGOS).filter(([, g]) => !g.oculto)
@@ -945,7 +1009,10 @@ $('hintToggle').addEventListener('click', () => { cfg.impostor.hint = !cfg.impos
 
 document.querySelectorAll('.bump').forEach(b => b.addEventListener('click', () => {
   const a = b.dataset.act;
-  if ('pi'.includes(a[0])){
+  if (a[0] === 'g'){
+    ppCfg.meta = Math.max(3, Math.min(21, ppCfg.meta + (a === 'g+' ? 1 : -1)));
+    pintarPP();
+  } else if ('pi'.includes(a[0])){
     const c = cfg.nave, before = c.players;
     if (a === 'p+') c.players++; if (a === 'p-') c.players--;
     if (a === 'i+') c.impostors++; if (a === 'i-') c.impostors--;
@@ -1233,6 +1300,255 @@ $('testRandom').addEventListener('click', () => {
   $('testOut').hidden = false;
 });
 
+/* ---------- ping pong ----------
+   El único juego del panel que no toca el servidor: dos personas, un
+   móvil en la mesa y nada que sincronizar. Las medidas van en unidades
+   de altura (y va de 0 a 1, x de 0 a `ar`), así la partida es idéntica
+   en cualquier pantalla y los ángulos no salen deformados.            */
+
+const PPVELS = {
+  lenta:   { nombre:'Lenta',   v:0.55, nota:'Para empezar o para jugar con niños.' },
+  normal:  { nombre:'Normal',  v:0.78, nota:'El punto justo: se puede seguir la bola sin despeinarse.' },
+  rapida:  { nombre:'Rápida',  v:1.05, nota:'Reflejos. La bola se acelera además con cada golpe.' }
+};
+const ppCfg = { meta: 7, vel: 'normal' };
+let pp = null;
+
+function pintarPP(){
+  $('ppMeta').textContent = ppCfg.meta;
+  document.querySelector('[data-act="g-"]').disabled = ppCfg.meta <= 3;
+  document.querySelector('[data-act="g+"]').disabled = ppCfg.meta >= 21;
+  if (!$('ppVels').children.length){
+    $('ppVels').innerHTML = Object.entries(PPVELS).map(([k, v]) =>
+      '<button class="chip" data-v="' + k + '">' + v.nombre + '</button>').join('');
+    $('ppVels').addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if (!b) return;
+      ppCfg.vel = b.dataset.v; pintarPP();
+    });
+  }
+  document.querySelectorAll('#ppVels .chip')
+    .forEach(c => c.classList.toggle('on', c.dataset.v === ppCfg.vel));
+  $('ppVelNota').textContent = PPVELS[ppCfg.vel].nota;
+  $('ppSonido').classList.toggle('on', sonidoOn);
+}
+
+function ppMedidas(){
+  const l = $('ppLienzo'), r = l.getBoundingClientRect();
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  l.width = Math.round(r.width * dpr);
+  l.height = Math.round(r.height * dpr);
+  pp.rect = r;
+  pp.esc = l.height;                 // 1 unidad de altura = l.height píxeles
+  pp.ar = l.width / l.height;
+}
+
+function ppNueva(){
+  pp = {
+    ctx: $('ppLienzo').getContext('2d'),
+    marcador: { arriba: 0, abajo: 0 },
+    palaW: 0, palaH: 0.016, r: 0.021,
+    palas: { arriba: 0, abajo: 0 },
+    bola: { x: 0, y: .5, vx: 0, vy: 0 },
+    base: PPVELS[ppCfg.vel].v,
+    estado: 'saque', cuenta: 3, reloj: 0, hacia: 'abajo',
+    punteros: new Map(), raf: 0, ultimo: 0
+  };
+  ppMedidas();
+  pp.palaW = Math.min(.34 * pp.ar, .30);
+  pp.palas.arriba = pp.palas.abajo = pp.ar / 2;
+  ppSacar('abajo');
+}
+
+// El saque va hacia quien acaba de encajar, que es lo justo.
+function ppSacar(hacia){
+  pp.hacia = hacia;
+  pp.bola.x = pp.ar / 2; pp.bola.y = .5;
+  const ang = (rand(1000) / 1000 - .5) * 1.2;     // ±35° de la vertical
+  const v = pp.base;
+  pp.bola.vx = Math.sin(ang) * v;
+  pp.bola.vy = Math.cos(ang) * v * (hacia === 'abajo' ? 1 : -1);
+  pp.estado = 'saque'; pp.cuenta = 3; pp.reloj = 0;
+}
+
+function ppGolpe(lado){
+  const b = pp.bola, px = pp.palas[lado];
+  const off = Math.max(-1, Math.min(1, (b.x - px) / (pp.palaW / 2)));
+  const v = Math.min(pp.base * 2, Math.hypot(b.vx, b.vy) * 1.035);
+  const ang = off * 1.0;                          // hasta ~57°
+  b.vx = Math.sin(ang) * v;
+  b.vy = Math.cos(ang) * v * (lado === 'abajo' ? -1 : 1);
+  // sin esto, un roce muy lateral deja la bola rebotando entre paredes
+  const minVy = v * .34;
+  if (Math.abs(b.vy) < minVy){
+    b.vy = Math.sign(b.vy || (lado === 'abajo' ? -1 : 1)) * minVy;
+    b.vx = Math.sign(b.vx) * Math.sqrt(Math.max(0, v * v - b.vy * b.vy));
+  }
+  b.y = lado === 'abajo' ? .93 - pp.palaH / 2 - pp.r - .001
+                          : .07 + pp.palaH / 2 + pp.r + .001;
+  sonar('pala');
+}
+
+function ppMover(dt){
+  const b = pp.bola;
+  b.x += b.vx * dt; b.y += b.vy * dt;
+
+  if (b.x < pp.r){ b.x = pp.r; b.vx = Math.abs(b.vx); sonar('pared'); }
+  if (b.x > pp.ar - pp.r){ b.x = pp.ar - pp.r; b.vx = -Math.abs(b.vx); sonar('pared'); }
+
+  const yAb = .93, yAr = .07;
+  if (b.vy > 0 && b.y + pp.r >= yAb - pp.palaH / 2 && b.y - pp.r <= yAb + pp.palaH / 2
+      && Math.abs(b.x - pp.palas.abajo) <= pp.palaW / 2 + pp.r) ppGolpe('abajo');
+  if (b.vy < 0 && b.y - pp.r <= yAr + pp.palaH / 2 && b.y + pp.r >= yAr - pp.palaH / 2
+      && Math.abs(b.x - pp.palas.arriba) <= pp.palaW / 2 + pp.r) ppGolpe('arriba');
+
+  if (b.y < -pp.r * 2){ ppPunto('abajo'); }
+  else if (b.y > 1 + pp.r * 2){ ppPunto('arriba'); }
+}
+
+function ppPunto(quien){
+  pp.marcador[quien]++;
+  sonar('gol');
+  if (pp.marcador[quien] >= ppCfg.meta){ pp.estado = 'fin'; pp.ganador = quien; return; }
+  ppSacar(quien === 'abajo' ? 'arriba' : 'abajo');
+}
+
+function ppPaso(dt){
+  if (pp.estado === 'saque'){
+    pp.reloj += dt;
+    if (pp.reloj >= 1){ pp.reloj = 0; pp.cuenta--; if (pp.cuenta <= 0) pp.estado = 'juega'; }
+    return;
+  }
+  if (pp.estado !== 'juega') return;
+  // a trozos pequeños: con la bola acelerada, un salto grande la
+  // colaría a través de la pala sin tocarla
+  const v = Math.hypot(pp.bola.vx, pp.bola.vy);
+  const trozos = Math.max(1, Math.ceil(v * dt / (pp.r * .5)));
+  for (let i = 0; i < trozos && pp.estado === 'juega'; i++) ppMover(dt / trozos);
+}
+
+function ppPintar(){
+  const c = pp.ctx, e = pp.esc, W = pp.ar * e, H = e;
+  c.clearRect(0, 0, W, H);
+  c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+
+  c.strokeStyle = 'rgba(232,228,218,.16)'; c.lineWidth = Math.max(1, e * .003);
+  c.setLineDash([e * .02, e * .02]);
+  c.beginPath(); c.moveTo(0, H / 2); c.lineTo(W, H / 2); c.stroke();
+  c.setLineDash([]);
+
+  const marcador = (n, y, giro, color) => {
+    c.save(); c.translate(W / 2, y); if (giro) c.rotate(Math.PI);
+    c.fillStyle = color; c.font = '700 ' + (e * .13) + 'px "Big Shoulders Display", sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.globalAlpha = .35;
+    c.fillText(String(n), 0, 0); c.restore();
+  };
+  marcador(pp.marcador.arriba, H * .27, true, '#2E9E92');
+  marcador(pp.marcador.abajo, H * .73, false, '#F2A13B');
+
+  const pala = (x, y, color) => {
+    c.fillStyle = color;
+    const w = pp.palaW * e, hh = pp.palaH * e;
+    c.beginPath();
+    c.roundRect(x * e - w / 2, y * e - hh / 2, w, hh, hh / 2);
+    c.fill();
+  };
+  pala(pp.palas.arriba, .07, '#2E9E92');
+  pala(pp.palas.abajo, .93, '#F2A13B');
+
+  if (pp.estado !== 'fin'){
+    c.fillStyle = '#E8E4DA';
+    c.beginPath(); c.arc(pp.bola.x * e, pp.bola.y * e, pp.r * e, 0, Math.PI * 2); c.fill();
+  }
+
+  const centrado = (txt, tam, dy, giro, alpha) => {
+    c.save(); c.translate(W / 2, H / 2 + dy); if (giro) c.rotate(Math.PI);
+    c.fillStyle = '#E8E4DA'; c.globalAlpha = alpha;
+    c.font = '700 ' + (e * tam) + 'px "Big Shoulders Display", sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(txt, 0, 0); c.restore();
+  };
+  if (pp.estado === 'saque') centrado(String(pp.cuenta), .12, 0, false, .8);
+  if (pp.estado === 'fin'){
+    const gana = pp.ganador === 'abajo' ? 'ABAJO' : 'ARRIBA';
+    centrado('GANA ' + gana, .075, -e * .05, false, .95);
+    centrado(pp.marcador.arriba + ' – ' + pp.marcador.abajo, .06, e * .02, false, .55);
+    centrado('TOCA PARA OTRA', .035, e * .09, false, .45);
+    centrado('GANA ' + gana, .075, e * .05, true, .95);
+  }
+}
+
+function ppBucle(ahora){
+  if (!pp) return;
+  const dt = Math.min(.05, (ahora - pp.ultimo) / 1000 || 0);
+  pp.ultimo = ahora;
+  ppPaso(dt); ppPintar();
+  pp.raf = requestAnimationFrame(ppBucle);
+}
+
+function ppArrancar(){
+  show('ppJugar');
+  ppNueva();
+  ctxAudio();
+  cancelAnimationFrame(pp.raf);
+  pp.ultimo = performance.now();
+  pp.raf = requestAnimationFrame(ppBucle);
+}
+
+function ppParar(){
+  if (pp){ cancelAnimationFrame(pp.raf); pp = null; }
+}
+
+function ppLado(e){
+  const y = (e.clientY - pp.rect.top) / pp.rect.height;
+  return y < .5 ? 'arriba' : 'abajo';
+}
+function ppArrastrar(lado, e){
+  const x = (e.clientX - pp.rect.left) / pp.rect.height;   // misma escala que el resto
+  pp.palas[lado] = Math.max(pp.palaW / 2, Math.min(pp.ar - pp.palaW / 2, x));
+}
+
+(function(){
+  const l = $('ppLienzo');
+  l.addEventListener('pointerdown', e => {
+    if (!pp) return;
+    e.preventDefault();
+    if (pp.estado === 'fin'){ ppNueva(); return; }
+    try{ l.setPointerCapture(e.pointerId); }catch(err){}
+    const lado = ppLado(e);
+    pp.punteros.set(e.pointerId, lado);
+    ppArrastrar(lado, e);
+  });
+  l.addEventListener('pointermove', e => {
+    if (!pp) return;
+    const lado = pp.punteros.get(e.pointerId);
+    if (lado){ e.preventDefault(); ppArrastrar(lado, e); }
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(t =>
+    l.addEventListener(t, e => { if (pp) pp.punteros.delete(e.pointerId); }));
+})();
+
+$('ppEmpezar').addEventListener('click', ppArrancar);
+$('ppSonido').addEventListener('click', () => {
+  sonidoOn = !sonidoOn;
+  try{ localStorage.setItem(SONIDO_KEY, sonidoOn ? 'si' : 'no'); }catch(e){}
+  pintarPP();
+  if (sonidoOn) sonar('pala');
+});
+$('ppSalir').addEventListener('click', e => {
+  const b = e.currentTarget;
+  if (b.dataset.seguro !== '1'){
+    b.dataset.seguro = '1'; b.textContent = '¿Seguro?';
+    setTimeout(() => { b.dataset.seguro = ''; b.textContent = 'Salir'; }, 3000);
+    return;
+  }
+  b.dataset.seguro = ''; b.textContent = 'Salir';
+  ppParar(); show('setupPP');
+});
+window.addEventListener('resize', () => { if (pp){ ppMedidas(); pp.palaW = Math.min(.34 * pp.ar, .30); } });
+document.addEventListener('visibilitychange', () => {
+  if (pp && document.hidden && pp.estado === 'juega') ppSacar(pp.hacia);
+});
+
 /* ---------- navegación ---------- */
 document.querySelectorAll('[data-start]').forEach(b => b.addEventListener('click', () => { game = b.dataset.start; deal(); }));
 document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => show(b.dataset.back)));
@@ -1341,6 +1657,8 @@ function pintarJuego(){
     (g.palabras ? ' Se sortea entre <b>' + TOTAL_PALABRAS + ' palabras</b> de ' +
       Object.keys(WORDS).length + ' categorías.' : ''));
   $('modoUno').hidden = !g.setup;
+  $('modoOnline').hidden = !!g.soloLocal;
+  $('modoEntrar').hidden = !!g.soloLocal;
   $('juegoResume').hidden = !s;
   if (s) $('juegoResume').textContent = 'Volver a mi partida · ' + s.codigo;
   err('juegoErr','');
@@ -1777,6 +2095,23 @@ function sonar(tipo){
     return;
   }
 
+  // ping pong: pitidos cortos, que no cansen en una partida larga
+  if (tipo === 'pared' || tipo === 'pala' || tipo === 'gol'){
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = tipo === 'gol' ? 'sine' : 'square';
+    const dur = tipo === 'gol' ? .40 : .055;
+    if (tipo === 'gol'){
+      o.frequency.setValueAtTime(360, t);
+      o.frequency.exponentialRampToValueAtTime(90, t + dur);
+    } else {
+      o.frequency.setValueAtTime(tipo === 'pala' ? 780 : 480, t);
+    }
+    g.gain.setValueAtTime(tipo === 'gol' ? .28 : .16, t);
+    g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    o.connect(g); g.connect(salida); o.start(t); o.stop(t + dur + .02);
+    return;
+  }
+
   // golpe: cuanto más grave y más largo, más gordo. Hundido = explosión.
   const hundido = tipo === 'hundido';
   const largo = hundido ? .85 : .34;
@@ -2123,7 +2458,9 @@ $('panel').addEventListener('click', e => {
 });
 $('modoUno').addEventListener('click', () => {
   const g = J(onCfg.juego);
-  if (g.setup === 'setupAU'){ paintAU(true); } else { paintCats(); paintIM(true); }
+  if (g.setup === 'setupAU') paintAU(true);
+  else if (g.setup === 'setupPP') pintarPP();
+  else { paintCats(); paintIM(true); }
   show(g.setup);
 });
 $('modoOnline').addEventListener('click', () => { err('onCrearErr',''); pintarCrear(); show('onCrear'); });
