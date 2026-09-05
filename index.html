@@ -202,16 +202,17 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
 /* ---------- hundir la flota ---------- */
 .tab{display:grid;grid-template-columns:repeat(11,1fr);gap:2px;width:100%;touch-action:manipulation}
 .tab-h{display:grid;place-items:center;font-size:9px;color:#5F708A;font-variant-numeric:tabular-nums}
-.tab-c{aspect-ratio:1;display:grid;place-items:center;font-size:12px;line-height:1;
-  background:#141C26;border:1px solid var(--line);padding:0}
+.tab-c{aspect-ratio:1;display:grid;place-items:center;background:#141C26;
+  border:1px solid var(--line);padding:0}
+.tab-c::after{content:'';display:block;width:0;height:0}
 .tab-c.barco{background:rgba(46,158,146,.32);border-color:var(--coolant)}
-.tab-c.previa{background:rgba(46,158,146,.35);border-color:var(--coolant)}
-.tab-c.mal{background:rgba(179,38,38,.35);border-color:var(--alert)}
-.tab-c.agua{color:#4A5A70}
-.tab-c.tocado{background:rgba(217,86,78,.22);border-color:var(--rol-malo);color:var(--rol-malo)}
-.tab-c.hundido{background:var(--rol-malo);border-color:var(--rol-malo);color:var(--noche);font-weight:700}
+.tab-c.agua{background:#233242;border-color:#31445A}
+.tab-c.agua::after{width:44%;height:44%;border-radius:50%;background:#61748E}
+.tab-c.tocado{background:#8E3B36;border-color:#C0605A}
+.tab-c.tocado::after{width:50%;height:50%;border-radius:50%;background:#FFD9D5}
+.tab-c.hundido{background:var(--rol-malo);border-color:#F0A19B}
+.tab-c.hundido::after{width:54%;height:54%;border-radius:2px;background:#2B0E0C}
 .tab.mini{gap:1px}
-.tab.mini .tab-c{font-size:9px}
 .tab.mini .tab-h{font-size:7px}
 .tab.quieto{opacity:.55;pointer-events:none}
 .turno{border:1px solid var(--line);background:var(--panel);padding:12px 14px;text-align:center;
@@ -458,6 +459,16 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
       <p class="note" id="onImpNota" style="margin-top:8px"></p>
     </div>
 
+    <div id="onFlotaWrap" hidden>
+      <div class="stepper">
+        <div class="stepper-head">
+          <span class="stepper-label">Tamaño de la partida</span>
+        </div>
+        <div class="chips" id="onFlotas"></div>
+        <p class="note" id="onFlotaDesc" style="margin-top:8px"></p>
+      </div>
+    </div>
+
     <div id="onCatWrap" hidden>
       <div class="stepper">
         <div class="stepper-head"><span class="stepper-label">Categoría</span></div>
@@ -599,6 +610,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
     <div class="tab mini quieto" id="flTabMio"></div>
   </div>
   <div class="stack">
+    <button class="ghost" id="flSonido">Sonido: activado</button>
     <button class="ghost" id="flRendirse">Abandonar la partida</button>
     <button class="ghost" id="flSalir2">Salir de la sala</button>
   </div>
@@ -814,7 +826,7 @@ const JUEGOS = {
 };
 /* Sube con la versión de sw.js, siempre a la vez. Sale en el índice
    para poder distinguir de un vistazo la app de una copia en caché. */
-const VERSION = 'v10';
+const VERSION = 'v11';
 const J = j => JUEGOS[j] || JUEGOS.nave;
 // el panel manda el número, no el orden en que estén escritos aquí
 const catalogo = () => Object.entries(JUEGOS).filter(([, g]) => !g.oculto)
@@ -1255,7 +1267,7 @@ const SB_KEY = 'sb_publishable_YvscpEat-wLXZZg1CRzHdw_Sp5iMMnG';
 const SES_KEY = 'sala-de-juegos-online';
 
 let ses = null;                                   // {codigo, token, host, nombre, juego}
-let onCfg = { juego:'impostor', imp:1, cat:'Aleatoria', pista:true };
+let onCfg = { juego:'impostor', imp:1, cat:'Aleatoria', pista:true, flota:'media' };
 let onTimer = null, onBusy = false, onRolData = null, onRondaVista = -1, onGuardadas = {};
 let miVoto = null;
 
@@ -1351,6 +1363,26 @@ function pintarCrear(){
   const esImp = conPalabras;
   $('onCatWrap').hidden = !conPalabras;
   $('onPista').hidden = !g.pista;
+  $('onFlotaWrap').hidden = onCfg.juego !== 'flota';
+  if (onCfg.juego === 'flota'){
+    if (!$('onFlotas').children.length){
+      $('onFlotas').innerHTML = Object.entries(FLOTAS).map(([k, f]) =>
+        '<button class="chip" data-f="' + k + '">' + f.nombre + '</button>').join('');
+      $('onFlotas').addEventListener('click', e => {
+        const b = e.target.closest('.chip'); if (!b) return;
+        onCfg.flota = b.dataset.f; pintarCrear();
+      });
+    }
+    document.querySelectorAll('#onFlotas .chip')
+      .forEach(c => c.classList.toggle('on', c.dataset.f === onCfg.flota));
+    $('onFlotaDesc').innerHTML = 'Tablero de <b>' + descFlota(onCfg.flota) + '</b>. ' +
+      (onCfg.flota === 'clasica'
+        ? 'La de toda la vida: da para rato y las casillas quedan pequeñas en el móvil.'
+        : onCfg.flota === 'rapida'
+          ? 'Para una partida de cinco minutos, con las casillas bien grandes.'
+          : 'El punto medio: se ve bien y no se hace larga.');
+    flTam = FLOTAS[onCfg.flota].tam; flLargos = FLOTAS[onCfg.flota].largos;
+  }
   $('onPista').classList.toggle('on', onCfg.pista);
   if (esImp && !$('onCats').children.length){
     $('onCats').innerHTML = CATS.map(c =>
@@ -1372,7 +1404,7 @@ async function crearSala(){
     const r = await rpc('crear_partida', {
       p_juego: onCfg.juego, p_impostores: onCfg.imp,
       p_categoria: onCfg.juego !== 'nave' && onCfg.cat !== 'Aleatoria' ? onCfg.cat : null,
-      p_pista: onCfg.pista, p_nombre: nombre
+      p_pista: onCfg.pista, p_nombre: nombre, p_flota: onCfg.flota
     });
     ses = { codigo:r.codigo, token:r.token, host:r.host_token, nombre:r.nombre, juego:onCfg.juego };
     sesSave(); onRondaVista = -1; onRolData = null;
@@ -1701,28 +1733,103 @@ async function otraRonda(){
   finally{ b.disabled = false; b.textContent = 'Otra ronda'; }
 }
 
+/* ---------- sonido ----------
+   Generado con WebAudio en vez de ficheros: no hay nada que descargar,
+   funciona sin cobertura y no toca la lista de sitios permitidos.
+   Si el navegador no deja, se calla y no rompe nada. */
+const SONIDO_KEY = 'sala-de-juegos-sonido';
+let audioCtx = null, sonidoOn = true;
+try{ sonidoOn = localStorage.getItem(SONIDO_KEY) !== 'no'; }catch(e){}
+
+function ctxAudio(){
+  if (!sonidoOn) return null;
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }catch(e){ return null; }
+}
+
+function ruido(a, dur, caida){
+  const n = Math.max(1, Math.floor(a.sampleRate * dur));
+  const buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, caida);
+  const s = a.createBufferSource(); s.buffer = buf; return s;
+}
+
+function sonar(tipo){
+  const a = ctxAudio(); if (!a) return;
+  const t = a.currentTime;
+  const salida = a.createGain(); salida.gain.value = .8; salida.connect(a.destination);
+
+  if (tipo === 'agua'){
+    // chapoteo: ruido filtrado que se apaga, y un "plop" que cae de tono
+    const s = ruido(a, .28, 3), f = a.createBiquadFilter(), g = a.createGain();
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(1800, t); f.frequency.exponentialRampToValueAtTime(240, t + .28);
+    g.gain.setValueAtTime(.30, t); g.gain.exponentialRampToValueAtTime(.001, t + .28);
+    s.connect(f); f.connect(g); g.connect(salida); s.start(t); s.stop(t + .3);
+    const o = a.createOscillator(), og = a.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(440, t); o.frequency.exponentialRampToValueAtTime(120, t + .16);
+    og.gain.setValueAtTime(.22, t); og.gain.exponentialRampToValueAtTime(.001, t + .16);
+    o.connect(og); og.connect(salida); o.start(t); o.stop(t + .18);
+    return;
+  }
+
+  // golpe: cuanto más grave y más largo, más gordo. Hundido = explosión.
+  const hundido = tipo === 'hundido';
+  const largo = hundido ? .85 : .34;
+  const s = ruido(a, largo, hundido ? 1.6 : 2.4), f = a.createBiquadFilter(), g = a.createGain();
+  f.type = 'lowpass';
+  f.frequency.setValueAtTime(hundido ? 1400 : 900, t);
+  f.frequency.exponentialRampToValueAtTime(90, t + largo);
+  g.gain.setValueAtTime(hundido ? .55 : .40, t);
+  g.gain.exponentialRampToValueAtTime(.001, t + largo);
+  s.connect(f); f.connect(g); g.connect(salida); s.start(t); s.stop(t + largo + .02);
+
+  const o = a.createOscillator(), og = a.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(hundido ? 130 : 180, t);
+  o.frequency.exponentialRampToValueAtTime(hundido ? 30 : 65, t + largo * .8);
+  og.gain.setValueAtTime(hundido ? .55 : .38, t);
+  og.gain.exponentialRampToValueAtTime(.001, t + largo * .9);
+  o.connect(og); og.connect(salida); o.start(t); o.stop(t + largo);
+}
+
 /* ---------- hundir la flota ----------
    El tablero de cada uno vive en el servidor y solo el servidor decide
    si un tiro es agua o tocado. Aquí abajo no hay ni rastro de la flota
    del rival: lo único que llega es el resultado de tus propios tiros. */
 
 const LETRAS = 'ABCDEFGHIJ';
-const LARGOS = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
+/* Tres tamaños. Tienen que cuadrar con flota_tam() y flota_largos() del
+   servidor, que es quien valida: aquí solo evitamos pedir imposibles. */
+const FLOTAS = {
+  rapida:  { nombre:'Rápida',  tam:6,  largos:[3,2,2,1] },
+  media:   { nombre:'Media',   tam:8,  largos:[4,3,2,2,1,1] },
+  clasica: { nombre:'Clásica', tam:10, largos:[4,3,3,2,2,2,1,1,1,1] }
+};
+const sumaFlota = f => FLOTAS[f].largos.reduce((a, b) => a + b, 0);
+const descFlota = f => FLOTAS[f].tam + '×' + FLOTAS[f].tam + ' · ' +
+  FLOTAS[f].largos.length + ' barcos · ' + sumaFlota(f) + ' casillas';
+
+let flTam = 10, flLargos = FLOTAS.clasica.largos;
 const celda = (x, y) => LETRAS[x - 1] + y;
 const xy = c => [LETRAS.indexOf(c[0]) + 1, +c.slice(1)];
 
 let fl = { barcos: [], hor: true, enviada: false, enviando: false };
-let flRonda = -1, flBusy = false;
+let flRonda = -1, flBusy = false, flRecibidos = -1;
 
-function pintarTab(el, clases, textos){
+function pintarTab(el, clases){
+  el.style.gridTemplateColumns = 'repeat(' + (flTam + 1) + ', 1fr)';
   let s = '<span class="tab-h"></span>';
-  for (let x = 1; x <= 10; x++) s += '<span class="tab-h">' + LETRAS[x - 1] + '</span>';
-  for (let y = 1; y <= 10; y++){
+  for (let x = 1; x <= flTam; x++) s += '<span class="tab-h">' + LETRAS[x - 1] + '</span>';
+  for (let y = 1; y <= flTam; y++){
     s += '<span class="tab-h">' + y + '</span>';
-    for (let x = 1; x <= 10; x++){
+    for (let x = 1; x <= flTam; x++){
       const c = celda(x, y);
-      s += '<button class="tab-c ' + (clases[c] || '') + '" data-c="' + c + '">' +
-           (textos[c] || '') + '</button>';
+      s += '<button class="tab-c ' + (clases[c] || '') + '" data-c="' + c + '"></button>';
     }
   }
   el.innerHTML = s;
@@ -1733,17 +1840,17 @@ function cabe(barcos, cs){
   const ocup = new Set(barcos.flatMap(b => b.celdas));
   for (const c of cs){
     const [x, y] = xy(c);
-    if (x < 1 || x > 10 || y < 1 || y > 10) return false;
+    if (x < 1 || x > flTam || y < 1 || y > flTam) return false;
     for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++){
       const nx = x + dx, ny = y + dy;
-      if (nx >= 1 && nx <= 10 && ny >= 1 && ny <= 10 && ocup.has(celda(nx, ny))) return false;
+      if (nx >= 1 && nx <= flTam && ny >= 1 && ny <= flTam && ocup.has(celda(nx, ny))) return false;
     }
   }
   return true;
 }
 
 const pendientes = () => {
-  const p = LARGOS.slice();
+  const p = flLargos.slice();
   fl.barcos.forEach(b => { const i = p.indexOf(b.largo); if (i >= 0) p.splice(i, 1); });
   return p;
 };
@@ -1751,12 +1858,12 @@ const pendientes = () => {
 function flotaAlAzar(){
   for (let vuelta = 0; vuelta < 200; vuelta++){
     const barcos = []; let bien = true;
-    for (const L of LARGOS){
+    for (const L of flLargos){
       let puesto = false;
-      for (let k = 0; k < 600 && !puesto; k++){
+      for (let k = 0; k < 900 && !puesto; k++){
         const hor = rand(2) === 0;
-        const x = 1 + rand(hor ? 11 - L : 10);
-        const y = 1 + rand(hor ? 10 : 11 - L);
+        const x = 1 + rand(hor ? flTam - L + 1 : flTam);
+        const y = 1 + rand(hor ? flTam : flTam - L + 1);
         const cs = Array.from({length: L}, (_, i) => hor ? celda(x + i, y) : celda(x, y + i));
         if (cabe(barcos, cs)){ barcos.push({largo: L, celdas: cs}); puesto = true; }
       }
@@ -1770,13 +1877,13 @@ function flotaAlAzar(){
 function pintarColocar(){
   const clases = {};
   fl.barcos.forEach(b => b.celdas.forEach(c => clases[c] = 'barco'));
-  pintarTab($('flColTab'), clases, {});
+  pintarTab($('flColTab'), clases);
 
   const quedan = pendientes();
   const sig = quedan[0];
   let marcado = false;
   const puestos = {};
-  $('flColBarcos').innerHTML = LARGOS.map(L => {
+  $('flColBarcos').innerHTML = flLargos.map(L => {
     const total = fl.barcos.filter(b => b.largo === L).length;
     puestos[L] = (puestos[L] || 0);
     let cl = '';
@@ -1792,7 +1899,7 @@ function pintarColocar(){
       ? 'Toca dónde empieza el barco de <b>' + sig + (sig > 1 ? ' casillas' : ' casilla') + '</b>.' +
         ' Toca uno ya puesto para quitarlo.'
       : 'Flota completa. Dale a <b>Listo</b>.';
-  $('flListo').disabled = fl.barcos.length < 10 || fl.enviada || fl.enviando;
+  $('flListo').disabled = fl.barcos.length < flLargos.length || fl.enviada || fl.enviando;
   if (!fl.enviando) $('flListo').textContent = 'Listo';
   ['flGirar','flAzar','flBorrar'].forEach(id => $(id).disabled = fl.enviada || fl.enviando);
 }
@@ -1806,7 +1913,7 @@ function tocarColocar(c){
   const L = pendientes()[0];
   if (!L) return;
   const [x, y] = xy(c);
-  if (fl.hor ? x + L - 1 > 10 : y + L - 1 > 10){
+  if (fl.hor ? x + L - 1 > flTam : y + L - 1 > flTam){
     err('flColocarErr', 'Por ahí se sale del tablero. Gíralo o empieza más atrás.');
     return;
   }
@@ -1821,6 +1928,7 @@ function tocarColocar(c){
 
 async function enviarFlota(){
   if (fl.enviando || fl.enviada) return;
+  ctxAudio();                       // el primer toque desbloquea el audio en iOS
   fl.enviando = true;
   $('flListo').textContent = 'Enviando…'; $('flListo').disabled = true; err('flColocarErr','');
   try{
@@ -1836,22 +1944,30 @@ async function enviarFlota(){
 function pintarJugar(t){
   $('flJugEyebrow').textContent = 'Ronda ' + t.ronda + ' · contra ' + esc(t.rival.nombre || '—');
 
-  const cR = {}, tR = {};
-  t.misTiros.forEach(d => { cR[d.celda] = d.resultado; tR[d.celda] = d.resultado === 'agua' ? '·' : '✕'; });
-  pintarTab($('flTabRival'), cR, tR);
+  const cR = {};
+  t.misTiros.forEach(d => cR[d.celda] = d.resultado);
+  pintarTab($('flTabRival'), cR);
   $('flTabRival').classList.toggle('quieto', !t.miTurno);
 
-  const cM = {}, tM = {};
+  const cM = {};
   (t.yo.flota || []).forEach(b => b.celdas.forEach(c => cM[c] = 'barco'));
-  t.susTiros.forEach(d => { cM[d.celda] = d.resultado; tM[d.celda] = d.resultado === 'agua' ? '·' : '✕'; });
-  pintarTab($('flTabMio'), cM, tM);
+  t.susTiros.forEach(d => cM[d.celda] = d.resultado);
+  pintarTab($('flTabMio'), cM);
 
   $('flTurno').textContent = t.miTurno ? 'Te toca' : 'Espera a ' + (t.rival.nombre || '');
   $('flTurno').classList.toggle('mio', !!t.miTurno);
+  const total = flLargos.reduce((a, b) => a + b, 0);
   const dados = t.misTiros.filter(d => d.resultado !== 'agua').length;
   const recibidos = t.susTiros.filter(d => d.resultado !== 'agua').length;
-  $('flRivalLbl').textContent = 'Aguas del rival · le has dado a ' + dados + ' de 20';
-  if (!$('flMarca').textContent) $('flMarca').innerHTML = 'Te han dado a <b>' + recibidos + ' de 20</b>.';
+  $('flRivalLbl').textContent = 'Aguas del rival · le has dado a ' + dados + ' de ' + total;
+  if (!$('flMarca').textContent) $('flMarca').innerHTML = 'Te han dado a <b>' + recibidos + ' de ' + total + '</b>.';
+
+  // que también se oiga cuando te disparan a ti
+  if (flRecibidos >= 0 && t.susTiros.length > flRecibidos){
+    const ult = t.susTiros[t.susTiros.length - 1];
+    sonar(ult.resultado === 'agua' ? 'agua' : ult.resultado);
+  }
+  flRecibidos = t.susTiros.length;
 }
 
 async function tirar(c){
@@ -1859,6 +1975,7 @@ async function tirar(c){
   flBusy = true; err('flJugarErr','');
   try{
     const r = await rpc('disparar', { p_token: ses.token, p_celda: c });
+    sonar(r.resultado === 'agua' ? 'agua' : r.resultado);
     $('flMarca').innerHTML =
       r.ganada ? '<b>¡Le has hundido la flota entera!</b>'
       : r.resultado === 'agua' ? 'Agua. Le toca al rival.'
@@ -1884,10 +2001,10 @@ function pintarFlotaFin(t){
   if (t.rival.nombre) marc.push({nombre: t.rival.nombre, puntos: t.rival.puntos});
   pintarMarcador($('flMarcador'), marc.sort((a, b) => b.puntos - a.puntos));
 
-  const cM = {}, tM = {};
+  const cM = {};
   (t.yo.flota || []).forEach(b => b.celdas.forEach(c => cM[c] = 'barco'));
-  t.susTiros.forEach(d => { cM[d.celda] = d.resultado; tM[d.celda] = d.resultado === 'agua' ? '·' : '✕'; });
-  pintarTab($('flTabFin'), cM, tM);
+  t.susTiros.forEach(d => cM[d.celda] = d.resultado);
+  pintarTab($('flTabFin'), cM);
 
   $('flOtra').hidden = !ses.host;
   $('flFinWait').hidden = !!ses.host;
@@ -1906,6 +2023,8 @@ function pintarFlotaFin(t){
 }
 
 function aplicarFlota(t){
+  // el tamaño lo manda el servidor, no lo decide el móvil
+  if (t.tam){ flTam = t.tam; flLargos = t.largos || flLargos; }
   if (t.estado === 'lobby'){
     if (!$('onLobby').classList.contains('is-active')) show('onLobby');
     const js = [{nombre: t.yo.nombre, orden: 1, puntos: t.yo.puntos, visto: false, voto: false}];
@@ -1913,7 +2032,11 @@ function aplicarFlota(t){
     pintarLobby({codigo: t.codigo, juego: 'flota', estado: 'lobby', impostores: 1,
                  ronda: t.ronda, votos: 0, jugadores: js});
   } else if (t.estado === 'colocando'){
-    if (flRonda !== t.ronda){ flRonda = t.ronda; fl = {barcos: [], hor: true, enviada: false, enviando: false}; $('flMarca').textContent = ''; }
+    if (flRonda !== t.ronda){
+      flRonda = t.ronda; flRecibidos = -1;
+      fl = {barcos: [], hor: true, enviada: false, enviando: false};
+      $('flMarca').textContent = '';
+    }
     if (t.yo.listo){ fl.enviada = true; if (!fl.barcos.length) fl.barcos = t.yo.flota || []; }
     if (!$('flColocar').classList.contains('is-active')) show('flColocar');
     $('flColEyebrow').textContent = 'Ronda ' + t.ronda + ' · coloca tu flota';
@@ -1961,6 +2084,14 @@ $('flAzar').addEventListener('click', () => {
   if (!b){ err('flColocarErr', 'No he sabido colocarla al azar. Inténtalo otra vez.'); return; }
   fl.barcos = b; err('flColocarErr',''); pintarColocar();
 });
+function pintarSonido(){ $('flSonido').textContent = 'Sonido: ' + (sonidoOn ? 'activado' : 'apagado'); }
+$('flSonido').addEventListener('click', () => {
+  sonidoOn = !sonidoOn;
+  try{ localStorage.setItem(SONIDO_KEY, sonidoOn ? 'si' : 'no'); }catch(e){}
+  pintarSonido();
+  if (sonidoOn) sonar('agua');      // para oír que ha vuelto
+});
+pintarSonido();
 $('flListo').addEventListener('click', enviarFlota);
 $('flOtra').addEventListener('click', otraFlota);
 $('flRendirse').addEventListener('click', abandonar);
