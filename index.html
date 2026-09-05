@@ -230,6 +230,11 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
 #ppLienzo{flex:1;width:100%;min-height:0;display:block;touch-action:none}
 /* En la raya de en medio a propósito: arriba estorbaba justo donde
    arrastra el jugador de esa mitad, y se salía de la partida sin querer. */
+.pp-red{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;
+  background:rgba(179,38,38,.9);color:var(--ceramic);padding:8px 14px;font-size:11px;
+  letter-spacing:.16em;text-transform:uppercase}
+.pp-otra{position:absolute;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 16px);
+  width:auto;z-index:2}
 .pp-salir{position:absolute;top:50%;right:6px;transform:translateY(-50%);
   border:1px solid var(--line);background:rgba(20,28,38,.9);color:#8D9BB0;
   padding:9px 10px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;z-index:2}
@@ -333,6 +338,8 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
 <section class="screen" id="ppJugar">
   <canvas id="ppLienzo"></canvas>
   <button class="pp-salir" id="ppSalir">Salir</button>
+  <p class="pp-red" id="ppRed" hidden>Reconectando…</p>
+  <button class="cta pp-otra" id="ppOtra" hidden>Otra partida</button>
 </section>
 
 <!-- 1A · AJUSTES SABOTAJE -->
@@ -872,11 +879,11 @@ const JUEGOS = {
   },
   pingpong: {
     num: '04', nombre: 'Ping pong', h1: 'Ping<span>pong</span>',
-    setup: 'setupPP', soloLocal: true, malo: 'rival', malos: 'rivales', limpio: '',
+    setup: 'setupPP', malo: 'rival', malos: 'rivales', limpio: '',
     empezar: 'Jugar', otra: 'Otra partida',
-    corta: 'Un móvil en la mesa y uno a cada lado. Palas arriba y abajo, y a no dejar pasar la bola.',
-    reglas: 'El teléfono se deja plano en la mesa y os sentáis enfrente. Cada uno arrastra el dedo por su mitad para mover su pala. La bola rebota en las paredes de los lados y se acelera cada vez que la golpeáis. Si se te cuela por detrás, punto para el otro.',
-    detalle: 'Dos jugadores en el mismo móvil, sin internet. Podéis tocar los dos a la vez: el móvil sigue un dedo por cada mitad.',
+    corta: 'Palas arriba y abajo, la bola rebotando y goles. En un móvil entre los dos, o cada uno desde su casa.',
+    reglas: 'Cada uno mueve su pala arrastrando el dedo. La bola rebota en las paredes de los lados y se acelera cada vez que la golpeáis; si se te cuela por detrás, punto para el otro. En un solo móvil se deja plano en la mesa y os sentáis enfrente. En red, cada uno ve su propia pala abajo.',
+    detalle: 'Dos jugadores. En el mismo móvil no hace falta internet y podéis tocar los dos a la vez. En red la bola va por un canal en tiempo real, no por el sondeo: se juega con unos 30 ms de retardo, no con dos segundos.',
     minJug: 2, maxJug: 2, maxImp: 1, palabras: false, pista: false
   },
   intruso: {
@@ -890,7 +897,7 @@ const JUEGOS = {
 };
 /* Sube con la versión de sw.js, siempre a la vez. Sale en el índice
    para poder distinguir de un vistazo la app de una copia en caché. */
-const VERSION = 'v12';
+const VERSION = 'v13';
 const J = j => JUEGOS[j] || JUEGOS.nave;
 // el panel manda el número, no el orden en que estén escritos aquí
 const catalogo = () => Object.entries(JUEGOS).filter(([, g]) => !g.oculto)
@@ -1300,6 +1307,79 @@ $('testRandom').addEventListener('click', () => {
   $('testOut').hidden = false;
 });
 
+/* ---------- canal en tiempo real ----------
+   Para una bola, preguntar al servidor cada 2 s no vale. Esto es un
+   WebSocket contra los canales de Supabase, hablado a mano en vez de
+   con su librería: así el proyecto sigue sin dependencias y sin nada
+   que descargar. Los canales no tocan las tablas, así que el cierre a
+   cal y canto del resto del juego se queda igual.
+
+   Medido contra Irlanda: 30 ms de ida, 40 de 40 mensajes.            */
+const RT = { ws:null, canal:null, ref:0, unido:false, latidos:0, reintento:0, alDato:null, alEstado:null };
+
+function rtEnviar(m){
+  if (!RT.ws || RT.ws.readyState !== 1) return;
+  m.ref = String(++RT.ref);
+  try{ RT.ws.send(JSON.stringify(m)); }catch(e){}
+}
+
+function rtAbrir(){
+  let ws;
+  try{
+    ws = new WebSocket(SB_URL.replace('https://', 'wss://') +
+      '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0');
+  }catch(e){ return rtReintentar(); }
+  RT.ws = ws; RT.unido = false;
+
+  ws.onopen = () => {
+    RT.ref = 0;
+    rtEnviar({ topic: RT.canal, event: 'phx_join',
+      payload: { config: { broadcast: { self: false }, presence: { key: '' } } } });
+    clearInterval(RT.latidos);
+    RT.latidos = setInterval(() => rtEnviar({ topic:'phoenix', event:'heartbeat', payload:{} }), 25000);
+  };
+  ws.onmessage = ev => {
+    let m; try{ m = JSON.parse(ev.data); }catch(e){ return; }
+    if (m.event === 'phx_reply' && m.topic === RT.canal){
+      RT.unido = !!(m.payload && m.payload.status === 'ok');
+      RT.alEstado && RT.alEstado(RT.unido ? 'unido' : 'rechazado');
+    }
+    if (m.event === 'broadcast' && m.payload && RT.alDato) RT.alDato(m.payload.event, m.payload.payload);
+  };
+  ws.onclose = () => {
+    clearInterval(RT.latidos); RT.unido = false;
+    RT.alEstado && RT.alEstado('caido');
+    rtReintentar();
+  };
+  ws.onerror = () => {};
+}
+
+function rtReintentar(){
+  if (!RT.canal) return;
+  clearTimeout(RT.reintento);
+  RT.reintento = setTimeout(() => { if (RT.canal) rtAbrir(); }, 1200);
+}
+
+function rtConectar(nombre, alDato, alEstado){
+  rtCerrar();
+  RT.canal = 'realtime:' + nombre;
+  RT.alDato = alDato; RT.alEstado = alEstado;
+  rtAbrir();
+}
+
+function rtDifundir(evento, datos){
+  if (!RT.unido) return;
+  rtEnviar({ topic: RT.canal, event:'broadcast',
+             payload: { type:'broadcast', event: evento, payload: datos } });
+}
+
+function rtCerrar(){
+  clearInterval(RT.latidos); clearTimeout(RT.reintento);
+  RT.canal = null; RT.alDato = null; RT.alEstado = null;
+  if (RT.ws){ try{ RT.ws.onclose = null; RT.ws.close(); }catch(e){} }
+  RT.ws = null; RT.unido = false;
+}
+
 /* ---------- ping pong ----------
    El único juego del panel que no toca el servidor: dos personas, un
    móvil en la mesa y nada que sincronizar. Las medidas van en unidades
@@ -1332,18 +1412,46 @@ function pintarPP(){
   $('ppSonido').classList.toggle('on', sonidoOn);
 }
 
+/* El lienzo puede medir 0x0 todavía: la pantalla acaba de aparecer y no
+   se ha dibujado, o el móvil está girando. Todo el juego se apoya en
+   esa medida, así que si no la hay se espera al siguiente fotograma en
+   vez de llenarlo todo de NaN. */
 function ppMedidas(){
   const l = $('ppLienzo'), r = l.getBoundingClientRect();
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
-  l.width = Math.round(r.width * dpr);
-  l.height = Math.round(r.height * dpr);
-  pp.rect = r;
-  pp.esc = l.height;                 // 1 unidad de altura = l.height píxeles
-  pp.ar = l.width / l.height;
+  if (r.width < 2 || r.height < 2){ pp.medido = false; return; }
+  pp.dpr = Math.min(3, window.devicePixelRatio || 1);
+  l.width = Math.round(r.width * pp.dpr);
+  l.height = Math.round(r.height * pp.dpr);
+  pp.rect = r; pp.cw = l.width; pp.ch = l.height;
+  pp.medido = true;
+  /* La FORMA del tablero la decide el anfitrión y viaja con la bola.
+     Si cada uno usara la de su móvil, con pantallas distintas la bola
+     no llegaría a la misma pared en los dos sitios: medido, 0,462
+     contra 0,536. El invitado encaja ese tablero en su pantalla y deja
+     márgenes si hace falta. */
+  if (pp.modo !== 'invitado') pp.ar = pp.cw / pp.ch;
+  ppEscala();
 }
 
-function ppNueva(){
+function ppEscala(){
+  if (!pp.medido || !(pp.ar > 0)) return;
+  pp.esc = Math.min(pp.ch, pp.cw / pp.ar);   // 1 unidad de altura = pp.esc píxeles
+  pp.offX = (pp.cw - pp.ar * pp.esc) / 2;
+  pp.offY = (pp.ch - pp.esc) / 2;
+}
+
+function ppAjustar(){
+  if (!pp.medido || !(pp.ar > 0)) return;
+  ppEscala();
+  pp.palaW = Math.min(.34 * pp.ar, .30);
+  const centro = pp.ar / 2;
+  if (!(pp.palas.abajo > 0)){ pp.palas.arriba = pp.palas.abajo = centro; }
+  if (!(pp.bola.x > 0)) pp.bola.x = centro;
+}
+
+function ppNueva(modo){
   pp = {
+    modo: modo || (pp && pp.modo) || 'local',
     ctx: $('ppLienzo').getContext('2d'),
     marcador: { arriba: 0, abajo: 0 },
     palaW: 0, palaH: 0.016, r: 0.021,
@@ -1351,11 +1459,11 @@ function ppNueva(){
     bola: { x: 0, y: .5, vx: 0, vy: 0 },
     base: PPVELS[ppCfg.vel].v,
     estado: 'saque', cuenta: 3, reloj: 0, hacia: 'abajo',
-    punteros: new Map(), raf: 0, ultimo: 0
+    punteros: new Map(), raf: 0, ultimo: 0,
+    dest: null, tEnvio: 0, red: 'unido', ronda: 0
   };
-  ppMedidas();
-  pp.palaW = Math.min(.34 * pp.ar, .30);
-  pp.palas.arriba = pp.palas.abajo = pp.ar / 2;
+  pp.miPala = pp.modo === 'invitado' ? 'arriba' : 'abajo';
+  ppMedidas(); ppAjustar();
   ppSacar('abajo');
 }
 
@@ -1363,6 +1471,7 @@ function ppNueva(){
 function ppSacar(hacia){
   pp.hacia = hacia;
   pp.bola.x = pp.ar / 2; pp.bola.y = .5;
+  if (!pp.medido) return;
   const ang = (rand(1000) / 1000 - .5) * 1.2;     // ±35° de la vertical
   const v = pp.base;
   pp.bola.vx = Math.sin(ang) * v;
@@ -1408,8 +1517,83 @@ function ppMover(dt){
 function ppPunto(quien){
   pp.marcador[quien]++;
   sonar('gol');
-  if (pp.marcador[quien] >= ppCfg.meta){ pp.estado = 'fin'; pp.ganador = quien; return; }
+  if (pp.marcador[quien] >= ppCfg.meta){
+    pp.estado = 'fin'; pp.ganador = quien;
+    // aquí y no solo en el bucle de dibujo: si el móvil pausa la
+    // animación, el botón tiene que estar igualmente
+    $('ppOtra').hidden = pp.modo !== 'anfitrion';
+    if (pp.modo === 'anfitrion') ppCerrarOnline();
+    return;
+  }
   ppSacar(quien === 'abajo' ? 'arriba' : 'abajo');
+}
+
+/* El invitado no simula: recibe la bola del anfitrión y la va
+   adivinando entre mensaje y mensaje con la velocidad que le llegó, y
+   corrige suave hacia la posición buena. Sin esto, a 30 mensajes por
+   segundo la bola daría saltitos. Su propia pala sí es local, para que
+   responda al dedo sin esperar a nadie. */
+function ppInvitado(dt){
+  if (!pp.dest) return;
+  const edad = (performance.now() - pp.dest.t) / 1000;
+  pp.mudo = edad > 1.2;
+  /* Solo se adivina un poco hacia delante. Sin este tope, si el rival
+     se va de la aplicación y deja de mandar, la bola sigue "avanzando"
+     hasta salirse del tablero: llegó a estar en x=2,75 con un máximo
+     de 0,46. */
+  const dtd = Math.min(.25, edad);
+  const d = pp.dest;
+  const tx = d.x + d.vx * dtd, ty = d.y + d.vy * dtd;
+  const k = Math.min(1, dt * 12);
+  pp.bola.x += (tx - pp.bola.x) * k;
+  pp.bola.y += (ty - pp.bola.y) * k;
+  pp.bola.x = Math.max(0, Math.min(pp.ar, pp.bola.x));
+  pp.bola.y = Math.max(0, Math.min(1, pp.bola.y));
+}
+
+function ppRed(dt){
+  if (pp.modo === 'local') return;
+  if (pp.modo === 'anfitrion' && pp.tRival) pp.mudo = performance.now() - pp.tRival > 1200;
+  pp.tEnvio += dt;
+  if (pp.tEnvio < .033) return;
+  pp.tEnvio = 0;
+  if (pp.modo === 'anfitrion'){
+    const b = pp.bola;
+    rtDifundir('e', { ar:+pp.ar.toFixed(4),
+      x:+b.x.toFixed(4), y:+b.y.toFixed(4), vx:+b.vx.toFixed(3), vy:+b.vy.toFixed(3),
+      pb:+pp.palas.abajo.toFixed(4), ma:pp.marcador.arriba, mb:pp.marcador.abajo,
+      s:pp.estado, c:pp.cuenta, m:ppCfg.meta, g:pp.ganador || null });
+  } else {
+    rtDifundir('p', { p:+pp.palas.arriba.toFixed(4) });
+  }
+}
+
+function ppRecibir(evento, d){
+  if (!pp || !d) return;
+  if (evento === 'p' && pp.modo === 'anfitrion'){
+    pp.palas.arriba = Math.max(pp.palaW/2, Math.min(pp.ar - pp.palaW/2, d.p));
+    pp.tRival = performance.now(); pp.mudo = false;
+    return;
+  }
+  if (evento === 'e' && pp.modo === 'invitado'){
+    if (d.ar && d.ar !== pp.ar){ pp.ar = d.ar; ppAjustar(); }
+    pp.dest = { x:d.x, y:d.y, vx:d.vx, vy:d.vy, t: performance.now() };
+    if (!pp.arrancado){ pp.bola.x = d.x; pp.bola.y = d.y; pp.arrancado = true; }
+    pp.palas.abajo = d.pb;                       // la del rival; la mía es mía
+    const antes = pp.marcador.arriba + pp.marcador.abajo;
+    pp.marcador.arriba = d.ma; pp.marcador.abajo = d.mb;
+    if (d.ma + d.mb > antes) sonar('gol');
+    pp.estado = d.s; pp.cuenta = d.c; pp.ganador = d.g;
+    if (d.m) ppCfg.meta = d.m;
+  }
+}
+
+async function ppCerrarOnline(){
+  try{
+    await rpc('fin_pong', { p_codigo: ses.codigo, p_host_token: ses.host,
+      p_ganador: pp.ganador === 'abajo' ? 1 : 2,
+      p_tantos_1: pp.marcador.abajo, p_tantos_2: pp.marcador.arriba });
+  }catch(e){}
 }
 
 function ppPaso(dt){
@@ -1427,9 +1611,14 @@ function ppPaso(dt){
 }
 
 function ppPintar(){
+  if (!pp.medido) return;
   const c = pp.ctx, e = pp.esc, W = pp.ar * e, H = e;
-  c.clearRect(0, 0, W, H);
-  c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, pp.cw, pp.ch);
+  c.fillStyle = '#000'; c.fillRect(0, 0, pp.cw, pp.ch);
+  c.translate(pp.offX, pp.offY);
+  // en red cada uno se ve a sí mismo abajo: al invitado se le gira todo
+  if (pp.modo === 'invitado'){ c.translate(W, H); c.rotate(Math.PI); }
 
   c.strokeStyle = 'rgba(232,228,218,.16)'; c.lineWidth = Math.max(1, e * .003);
   c.setLineDash([e * .02, e * .02]);
@@ -1467,27 +1656,46 @@ function ppPintar(){
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText(txt, 0, 0); c.restore();
   };
-  if (pp.estado === 'saque') centrado(String(pp.cuenta), .12, 0, false, .8);
+  if (pp.estado === 'saque' && pp.cuenta > 0) centrado(String(pp.cuenta), .12, 0, false, .8);
   if (pp.estado === 'fin'){
-    const gana = pp.ganador === 'abajo' ? 'ABAJO' : 'ARRIBA';
-    centrado('GANA ' + gana, .075, -e * .05, false, .95);
-    centrado(pp.marcador.arriba + ' – ' + pp.marcador.abajo, .06, e * .02, false, .55);
-    centrado('TOCA PARA OTRA', .035, e * .09, false, .45);
-    centrado('GANA ' + gana, .075, e * .05, true, .95);
+    const gana = pp.modo === 'local'
+      ? (pp.ganador === 'abajo' ? 'ABAJO' : 'ARRIBA')
+      : (pp.ganador === pp.miPala ? 'HAS GANADO' : 'HA GANADO EL RIVAL');
+    const titulo = pp.modo === 'local' ? 'GANA ' + gana : gana;
+    const mios = pp.marcador[pp.miPala], suyos = pp.marcador[pp.miPala === 'abajo' ? 'arriba' : 'abajo'];
+    centrado(titulo, .06, -e * .05, false, .95);
+    centrado(pp.modo === 'local' ? pp.marcador.arriba + ' – ' + pp.marcador.abajo : mios + ' – ' + suyos,
+             .06, e * .02, false, .55);
+    if (pp.modo === 'local'){
+      centrado('TOCA PARA OTRA', .035, e * .09, false, .45);
+      centrado('GANA ' + gana, .06, e * .05, true, .95);
+    }
   }
+  c.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 function ppBucle(ahora){
   if (!pp) return;
   const dt = Math.min(.05, (ahora - pp.ultimo) / 1000 || 0);
   pp.ultimo = ahora;
-  ppPaso(dt); ppPintar();
+  if (!pp.medido){
+    ppMedidas(); ppAjustar();
+    if (!pp.medido){ pp.raf = requestAnimationFrame(ppBucle); return; }
+    if (!(pp.bola.vy)) ppSacar('abajo');
+  }
+  if (pp.modo === 'invitado') ppInvitado(dt); else ppPaso(dt);
+  ppRed(dt);
+  ppPintar();
+  const perdido = pp.modo !== 'local' && (pp.red !== 'unido' || pp.mudo);
+  $('ppRed').hidden = !perdido;
+  if (perdido) $('ppRed').textContent = pp.red !== 'unido' ? 'Reconectando…' : 'Esperando al rival…';
+  $('ppOtra').hidden = !(pp.modo === 'anfitrion' && pp.estado === 'fin');
   pp.raf = requestAnimationFrame(ppBucle);
 }
 
-function ppArrancar(){
+function ppArrancar(modo){
   show('ppJugar');
-  ppNueva();
+  ppNueva(modo);
   ctxAudio();
   cancelAnimationFrame(pp.raf);
   pp.ultimo = performance.now();
@@ -1496,14 +1704,46 @@ function ppArrancar(){
 
 function ppParar(){
   if (pp){ cancelAnimationFrame(pp.raf); pp = null; }
+  $('ppRed').hidden = true; $('ppOtra').hidden = true;
+}
+
+/* La sala, el código, el enlace y el marcador son los mismos que el
+   resto de juegos; el canal en tiempo real solo lleva la bola. */
+function aplicarPong(s){
+  if (s.estado === 'lobby'){
+    if (pp) ppParar();
+    rtCerrar();
+    if (!$('onLobby').classList.contains('is-active')) show('onLobby');
+    pintarLobby(s);
+    return;
+  }
+  if (s.estado === 'jugando'){
+    if (!pp || pp.ronda !== s.ronda){
+      ppArrancar(ses.host ? 'anfitrion' : 'invitado');
+      pp.ronda = s.ronda;
+      pp.red = 'conectando';
+      rtConectar('pong-' + s.codigo, ppRecibir, e => { if (pp) pp.red = e; });
+    }
+    return;
+  }
+  if (s.estado === 'terminada'){
+    // si estaba jugando, que vea el resultado en el lienzo
+    if (pp){ pp.estado = 'fin'; return; }
+    // y si no llegó a entrar, al lobby con el marcador, no colgado
+    rtCerrar();
+    if (!$('onLobby').classList.contains('is-active')) show('onLobby');
+    pintarLobby(s);
+  }
 }
 
 function ppLado(e){
-  const y = (e.clientY - pp.rect.top) / pp.rect.height;
+  if (pp.modo !== 'local') return pp.miPala;        // en red solo tienes una pala
+  const y = ((e.clientY - pp.rect.top) * pp.dpr - pp.offY) / pp.esc;
   return y < .5 ? 'arriba' : 'abajo';
 }
 function ppArrastrar(lado, e){
-  const x = (e.clientX - pp.rect.left) / pp.rect.height;   // misma escala que el resto
+  let x = ((e.clientX - pp.rect.left) * pp.dpr - pp.offX) / pp.esc;
+  if (pp.modo === 'invitado') x = pp.ar - x;             // su pantalla va girada
   pp.palas[lado] = Math.max(pp.palaW / 2, Math.min(pp.ar - pp.palaW / 2, x));
 }
 
@@ -1512,7 +1752,7 @@ function ppArrastrar(lado, e){
   l.addEventListener('pointerdown', e => {
     if (!pp) return;
     e.preventDefault();
-    if (pp.estado === 'fin'){ ppNueva(); return; }
+    if (pp.estado === 'fin'){ if (pp.modo === 'local') ppNueva(); return; }
     try{ l.setPointerCapture(e.pointerId); }catch(err){}
     const lado = ppLado(e);
     pp.punteros.set(e.pointerId, lado);
@@ -1527,7 +1767,13 @@ function ppArrastrar(lado, e){
     l.addEventListener(t, e => { if (pp) pp.punteros.delete(e.pointerId); }));
 })();
 
-$('ppEmpezar').addEventListener('click', ppArrancar);
+$('ppEmpezar').addEventListener('click', () => ppArrancar('local'));
+$('ppOtra').addEventListener('click', async () => {
+  const b = $('ppOtra'); b.disabled = true;
+  try{ await rpc('repartir', { p_codigo: ses.codigo, p_host_token: ses.host }); await refrescar(); }
+  catch(e){}
+  finally{ b.disabled = false; }
+});
 $('ppSonido').addEventListener('click', () => {
   sonidoOn = !sonidoOn;
   try{ localStorage.setItem(SONIDO_KEY, sonidoOn ? 'si' : 'no'); }catch(e){}
@@ -1535,6 +1781,7 @@ $('ppSonido').addEventListener('click', () => {
   if (sonidoOn) sonar('pala');
 });
 $('ppSalir').addEventListener('click', e => {
+  if (pp && pp.modo !== 'local'){ rtCerrar(); ppParar(); salirSala(); return; }
   const b = e.currentTarget;
   if (b.dataset.seguro !== '1'){
     b.dataset.seguro = '1'; b.textContent = '¿Seguro?';
@@ -1544,7 +1791,7 @@ $('ppSalir').addEventListener('click', e => {
   b.dataset.seguro = ''; b.textContent = 'Salir';
   ppParar(); show('setupPP');
 });
-window.addEventListener('resize', () => { if (pp){ ppMedidas(); pp.palaW = Math.min(.34 * pp.ar, .30); } });
+window.addEventListener('resize', () => { if (pp){ ppMedidas(); ppAjustar(); } });
 document.addEventListener('visibilitychange', () => {
   if (pp && document.hidden && pp.estado === 'juega') ppSacar(pp.hacia);
 });
@@ -1750,7 +1997,7 @@ async function entrarSala(){
    Cada 2 s se pregunta al servidor cómo va la sala. Se corta solo si
    el móvil se bloquea o te vas a otra pantalla: no tiene sentido
    gastar batería preguntando por una sala que no estás mirando.     */
-const PANTALLAS = ['onLobby','onRol','onVotar','onFin','flColocar','flJugar','flFin'];
+const PANTALLAS = ['onLobby','onRol','onVotar','onFin','flColocar','flJugar','flFin','ppJugar'];
 const enJuego = () => PANTALLAS.some(id => $(id).classList.contains('is-active'));
 
 function pollStart(){ pollStop(); pollTick(); onTimer = setInterval(pollTick, 2000); }
@@ -1769,10 +2016,10 @@ async function refrescar(){
     return;
   }
   const s = await rpc('sala', { p_codigo: ses.codigo });
-  if (s.juego === 'flota'){
-    ses.juego = 'flota'; sesSave();
-    aplicarFlota(await rpc('tablero', { p_token: ses.token }));
-  } else aplicarSala(s);
+  if (s.juego !== ses.juego){ ses.juego = s.juego; sesSave(); }
+  if (s.juego === 'flota') aplicarFlota(await rpc('tablero', { p_token: ses.token }));
+  else if (s.juego === 'pingpong') aplicarPong(s);
+  else aplicarSala(s);
 }
 
 async function pollTick(){
