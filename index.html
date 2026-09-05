@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="Among Us y El impostor para jugar pasando un móvil.">
+<meta name="description" content="Tripulantes y El impostor para jugar pasando un móvil.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -163,10 +163,10 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
   </div>
 
   <div class="scroller">
-    <button class="game-card" data-game="amongus">
+    <button class="game-card" data-game="nave">
       <span class="game-num">01</span>
       <span>
-        <span class="game-name">Among Us</span>
+        <span class="game-name">Tripulantes</span>
         <span class="game-desc">Reparte tripulantes e impostores. Cada uno ve su rol tres segundos y pasa el móvil. Los impostores se conocen entre ellos.</span>
         <span class="game-meta">3–15 jugadores</span>
       </span>
@@ -185,10 +185,10 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
   <button class="ghost" id="hubResults">Historial de rondas</button>
 </section>
 
-<!-- 1A · AJUSTES AMONG US -->
+<!-- 1A · AJUSTES TRIPULANTES -->
 <section class="screen" id="setupAU">
   <div>
-    <p class="eyebrow">01 · Among Us</p>
+    <p class="eyebrow">01 · Tripulantes</p>
     <h1>Entre<br>nosotros<span>hay uno</span></h1>
     <div class="hatch"></div>
   </div>
@@ -220,7 +220,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
   </div>
 
   <div class="stack">
-    <button class="cta" data-start="amongus">Repartir</button>
+    <button class="cta" data-start="nave">Repartir</button>
     <button class="ghost" data-back="hub">Volver al índice</button>
   </div>
 </section>
@@ -375,9 +375,9 @@ const WORDS = {
 const CATS = ['Aleatoria', ...Object.keys(WORDS)];
 
 /* ---------- estado ---------- */
-let game = 'amongus';
+let game = 'nave';
 const cfg = {
-  amongus:  { players:8, impostors:2, names:[] },
+  nave:  { players:8, impostors:2, names:[] },
   impostor: { players:6, impostors:1, names:[], cat:'Aleatoria', hint:true }
 };
 let roles = [], turn = 0, timer = null;
@@ -428,9 +428,9 @@ function paintNames(boxId, c){
   }
 }
 
-/* ---------- ajustes Among Us ---------- */
+/* ---------- ajustes Tripulantes ---------- */
 function paintAU(rebuild){
-  const c = cfg.amongus, mx = maxImpAU(c.players);
+  const c = cfg.nave, mx = maxImpAU(c.players);
   if (c.impostors > mx) c.impostors = mx;
   $('auPlayers').textContent = c.players;
   $('auImpostors').textContent = c.impostors;
@@ -481,7 +481,7 @@ $('hintToggle').addEventListener('click', () => { cfg.impostor.hint = !cfg.impos
 document.querySelectorAll('.bump').forEach(b => b.addEventListener('click', () => {
   const a = b.dataset.act;
   if ('pi'.includes(a[0])){
-    const c = cfg.amongus, before = c.players;
+    const c = cfg.nave, before = c.players;
     if (a === 'p+') c.players++; if (a === 'p-') c.players--;
     if (a === 'i+') c.impostors++; if (a === 'i-') c.impostors--;
     paintAU(c.players !== before);
@@ -528,7 +528,7 @@ function finish(){
   saveHistory();
   refreshFile();
 
-  if (game === 'amongus'){
+  if (game === 'nave'){
     $('doneTitle').innerHTML = 'A la<br><span>nave</span>';
     $('doneTally').innerHTML =
       '<div class="tally-box"><div class="tally-n">' + (c.players - c.impostors) + '</div><div class="tally-l">Tripulantes</div></div>' +
@@ -576,7 +576,7 @@ function reveal(){
   $('roleKicker').textContent = me.name;
 
   const big = $('roleName');
-  if (game === 'amongus'){
+  if (game === 'nave'){
     big.textContent = me.imp ? 'Impostor' : 'Tripulante';
     $('roleSub').textContent = me.imp
       ? 'Sabotea, elimina y miente. Que no te pillen.'
@@ -627,7 +627,7 @@ function fmt(ts){
   return d.toLocaleDateString('es-ES', {day:'2-digit', month:'short'}) + ' · ' +
          d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
 }
-const gameLabel = g => g === 'impostor' ? 'El impostor' : 'Among Us';
+const gameLabel = g => g === 'impostor' ? 'El impostor' : 'Tripulantes';
 
 function lockResults(){
   $('resultsLocked').hidden = false;
@@ -742,7 +742,7 @@ $('wipe').addEventListener('click', () => {
 
 /* ---------- prueba de aleatoriedad ---------- */
 $('testRandom').addEventListener('click', () => {
-  const c = cfg.amongus, runs = 10000;
+  const c = cfg.nave, runs = 10000;
   const hits = new Array(c.players).fill(0);
   const pool = Array.from({length: c.players}, (_, i) => i);
   for (let n = 0; n < runs; n++) shuffle(pool).slice(0, c.impostors).forEach(i => hits[i]++);
@@ -758,7 +758,7 @@ $('testRandom').addEventListener('click', () => {
 /* ---------- navegación ---------- */
 document.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => {
   game = b.dataset.game;
-  if (game === 'amongus'){ paintAU(true); show('setupAU'); }
+  if (game === 'nave'){ paintAU(true); show('setupAU'); }
   else { paintCats(); paintIM(true); show('setupIM'); }
 }));
 document.querySelectorAll('[data-start]').forEach(b => b.addEventListener('click', () => { game = b.dataset.start; deal(); }));
@@ -768,7 +768,7 @@ bindHold($('hold'), reveal);
 bindHold($('holdResults'), openResults);
 
 $('again').addEventListener('click', deal);
-$('changeSetup').addEventListener('click', () => show(game === 'amongus' ? 'setupAU' : 'setupIM'));
+$('changeSetup').addEventListener('click', () => show(game === 'nave' ? 'setupAU' : 'setupIM'));
 $('toResults').addEventListener('click', () => { cameFrom = 'done'; lockResults(); show('results'); });
 $('hubResults').addEventListener('click', () => { cameFrom = 'hub'; lockResults(); show('results'); });
 $('backFromResults').addEventListener('click', () => show(cameFrom));
