@@ -262,7 +262,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
 
   <div class="scroller">
     <div class="stepper">
-      <div class="stepper-head"><span class="stepper-label">Jugadores</span><span class="stepper-cap">3 – 15</span></div>
+      <div class="stepper-head"><span class="stepper-label">Jugadores</span><span class="stepper-cap" id="auRango"></span></div>
       <div class="stepper-row">
         <button class="bump" data-act="p-">–</button>
         <span class="stepper-val" id="auPlayers">8</span>
@@ -302,7 +302,7 @@ a.dl{border-color:var(--amber);color:var(--amber);font-weight:600}
 
   <div class="scroller">
     <div class="stepper">
-      <div class="stepper-head"><span class="stepper-label">Jugadores</span><span class="stepper-cap">4 – 15</span></div>
+      <div class="stepper-head"><span class="stepper-label">Jugadores</span><span class="stepper-cap" id="imRango"></span></div>
       <div class="stepper-row">
         <button class="bump" data-act="P-">–</button>
         <span class="stepper-val" id="imPlayers">6</span>
@@ -595,12 +595,86 @@ const pick = a => a[rand(a.length)];
 
 /* ---------- palabras ---------- */
 const WORDS = {
-  'Comida':['paella','sushi','tortilla de patatas','croquetas','pizza','chuletón','gazpacho','churros','hamburguesa','jamón ibérico','lasaña','tarta de queso','pulpo a la gallega','bocadillo de calamares','helado de vainilla'],
-  'Lugares':['aeropuerto','playa','hospital','biblioteca','gimnasio','supermercado','cine','iglesia','cementerio','ascensor','peluquería','estadio de fútbol','museo','gasolinera','camping'],
-  'Animales':['pingüino','elefante','tiburón','murciélago','jirafa','pulpo','hormiga','cocodrilo','búho','canguro','erizo','ballena','camaleón','lobo','cabra'],
-  'Profesiones':['bombero','dentista','astronauta','taxista','profesor','árbitro','cocinero','fontanero','azafata','veterinario','policía','jardinero','notario','camarero','socorrista'],
-  'Objetos':['paraguas','microondas','cepillo de dientes','aspiradora','calcetín','mando a distancia','cargador','almohada','tijeras','escoba','despertador','cinturón','nevera','linterna','grapadora'],
-  'Ocio':['fútbol','ajedrez','natación','karaoke','escalada','patinaje','boxeo','pádel','yoga','ciclismo','dardos','surf','baloncesto','senderismo','bolos']
+  'Comida':['paella','sushi','tortilla de patatas','croquetas','pizza','chuletón','gazpacho',
+    'churros','hamburguesa','jamón ibérico','lasaña','tarta de queso','pulpo a la gallega',
+    'bocadillo de calamares','helado de vainilla','café con leche','cerveza','vino tinto',
+    'zumo de naranja','chocolate caliente','palomitas','patatas fritas','huevos fritos',
+    'arroz con leche','flan','natillas','magdalena','tostada con tomate','ensaladilla rusa',
+    'empanada','cocido','fabada','salmorejo','pisto','albóndigas','morcilla','chorizo',
+    'queso curado','aceitunas','boquerones en vinagre','sardinas','bacalao','merluza','gambas',
+    'mejillones','calamares','sopa de pollo','macarrones','canelones','mantequilla','mermelada',
+    'cereales','yogur','plátano','sandía','melón','fresas','uvas','aguacate','lentejas',
+    'garbanzos','alcachofa','pimiento','cebolla','turrón','roscón de reyes','mazapán',
+    'polvorones','gominolas','chicle','pipas','tortilla francesa'],
+  'Lugares':['aeropuerto','playa','hospital','biblioteca','gimnasio','supermercado','cine',
+    'iglesia','cementerio','ascensor','peluquería','estadio de fútbol','museo','gasolinera',
+    'camping','farmacia','panadería','carnicería','mercado','centro comercial','aparcamiento',
+    'estación de tren','parada de autobús','puerto','faro','castillo','catedral','monasterio',
+    'plaza mayor','parque','zoo','acuario','circo','teatro','discoteca','bar','restaurante',
+    'cafetería','hotel','albergue','colegio','universidad','guardería','comisaría','juzgado',
+    'cárcel','ayuntamiento','banco','oficina','fábrica','granja','invernadero','piscina',
+    'sauna','bolera','parque de atracciones','mercadillo','ferretería','papelería','quiosco',
+    'lavandería','taller mecánico','buhardilla','sótano','terraza','balcón','garaje','trastero',
+    'vestuario','sala de espera'],
+  'Animales':['pingüino','elefante','tiburón','murciélago','jirafa','pulpo','hormiga',
+    'cocodrilo','búho','canguro','erizo','ballena','camaleón','lobo','cabra','perro','gato',
+    'caballo','vaca','cerdo','oveja','gallina','pato','cisne','águila','halcón','loro',
+    'pavo real','flamenco','avestruz','tortuga','serpiente','lagartija','rana','delfín','foca',
+    'morsa','medusa','cangrejo','langosta','caracol','mariposa','abeja','avispa','mosquito',
+    'araña','escorpión','ciempiés','león','tigre','leopardo','oso','panda','koala','mono',
+    'gorila','rinoceronte','hipopótamo','cebra','camello','zorro','ardilla','castor','topo',
+    'conejo','ratón','hurón','mapache','perezoso','oso hormiguero','jabalí','ciervo','lince'],
+  'Profesiones':['bombero','dentista','astronauta','taxista','profesor','árbitro','cocinero',
+    'fontanero','azafata','veterinario','policía','jardinero','notario','camarero','socorrista',
+    'médico','enfermero','cirujano','psicólogo','farmacéutico','abogado','juez','arquitecto',
+    'ingeniero','electricista','albañil','carpintero','pintor','mecánico','cerrajero',
+    'panadero','carnicero','pescadero','frutero','peluquero','barbero','sastre','zapatero',
+    'joyero','relojero','fotógrafo','periodista','escritor','traductor','contable','cajero',
+    'dependiente','repartidor','cartero','barrendero','conductor de autobús','maquinista',
+    'piloto','marinero','pescador','agricultor','ganadero','minero','soldado','detective',
+    'bailarín','cantante','actor','mago','payaso','torero','entrenador','masajista','óptico',
+    'sepulturero'],
+  'Objetos':['paraguas','microondas','cepillo de dientes','aspiradora','calcetín',
+    'mando a distancia','cargador','almohada','tijeras','escoba','despertador','cinturón',
+    'nevera','linterna','grapadora','martillo','destornillador','taladro','alicates',
+    'cinta métrica','escalera','fregona','plancha','lavadora','horno','tostadora','batidora',
+    'cafetera','sartén','olla','tenedor','cuchara','vaso','taza','termo','sacacorchos',
+    'colador','rallador','exprimidor','espejo','peine','secador','maquinilla de afeitar',
+    'pinzas','cortaúñas','esponja','toalla','percha','maleta','mochila','cartera','llavero',
+    'gafas de sol','anillo','pendientes','bufanda','guantes','chubasquero','chanclas','corbata',
+    'cremallera','aguja','imperdible','tirita','termómetro','lupa','brújula','calculadora',
+    'auriculares','impresora','bombilla','vela','mechero','extintor','manguera','regadera',
+    'maceta','candado','embudo'],
+  'Ocio':['fútbol','ajedrez','natación','karaoke','escalada','patinaje','boxeo','pádel','yoga',
+    'ciclismo','dardos','surf','baloncesto','senderismo','bolos','tenis','golf','rugby',
+    'balonmano','voleibol','bádminton','ping-pong','esgrima','judo','kárate','atletismo',
+    'maratón','triatlón','esquí','snowboard','buceo','navegar a vela','remo','piragüismo',
+    'pesca','equitación','parapente','paracaidismo','puenting','rafting','tiro con arco',
+    'gimnasia','baile flamenco','salsa','ballet','parchís','dominó','bingo','ruleta',
+    'crucigrama','sudoku','puzle','videojuegos','petanca','mus','escondite','comba','canicas',
+    'yoyó','peonza','malabares','origami','punto de cruz','jardinería','fotografía'],
+  'Naturaleza':['lluvia','nieve','granizo','tormenta','rayo','trueno','arcoíris','niebla',
+    'viento','huracán','tornado','terremoto','volcán','avalancha','sequía','inundación',
+    'amanecer','atardecer','eclipse','luna llena','estrella fugaz','cometa','meteorito',
+    'galaxia','arena','duna','oasis','glaciar','iceberg','cascada','manantial','pantano',
+    'acantilado','arrecife','coral','alga','musgo','helecho','cactus','girasol','amapola',
+    'rosa','tulipán','margarita','roble','pino','olivo','palmera','sauce','bambú','seta',
+    'trigo','viñedo','bosque','marea','rocío','escarcha','ola','charco','barro'],
+  'Transporte':['coche','moto','bicicleta','patinete','monopatín','autobús','tranvía','tren',
+    'metro','avión','helicóptero','globo aerostático','barco','ferry','canoa','kayak','velero',
+    'yate','submarino','cohete','teleférico','funicular','telesilla','ambulancia',
+    'camión de bomberos','coche de policía','camión','furgoneta','grúa','excavadora','tractor',
+    'quad','caravana','trineo','patines','escalera mecánica','taxi','limusina',
+    'camión de la basura','hormigonera','carretilla','remolque','descapotable',
+    'coche de carreras','avioneta','globo','balsa','camión cisterna','monociclo','tándem'],
+  'Fiestas':['cumpleaños','boda','bautizo','comunión','despedida de soltero','Nochevieja',
+    'Nochebuena','Reyes Magos','Carnaval','Halloween','Semana Santa','graduación','jubilación',
+    'San Valentín','aniversario','mudanza','primera cita','luna de miel','vacaciones',
+    'acampada','barbacoa','picnic','verbena','romería','feria','procesión','cabalgata',
+    'castillo hinchable','piñata','confeti','globos','tarta de cumpleaños','velas de tarta',
+    'regalo','brindis','fuegos artificiales','disfraz','máscara','photocall','ramo de novia',
+    'sorteo','rifa','concierto','desfile','maratón de series','cena de empresa',
+    'amigo invisible','resaca']
 };
 const CATS = ['Aleatoria', ...Object.keys(WORDS)];
 
@@ -701,6 +775,7 @@ function paintAU(rebuild){
   $('auPlayers').textContent = c.players;
   $('auImpostors').textContent = c.impostors;
   $('auCap').textContent = 'máx. ' + mx;
+  $('auRango').textContent = JUEGOS.nave.minJug + ' – ' + JUEGOS.nave.maxJug;
   $('auNote').innerHTML = 'Con <b>' + c.players + ' jugadores</b> caben hasta <b>' + mx + ' ' +
     (mx === 1 ? 'saboteador' : 'saboteadores') + '</b>. Quedan <b>' + (c.players - c.impostors) + '</b> tripulantes.';
   document.querySelector('[data-act="p-"]').disabled = c.players <= JUEGOS.nave.minJug;
@@ -729,6 +804,7 @@ function paintIM(rebuild){
   $('imPlayers').textContent = c.players;
   $('imImpostors').textContent = c.impostors;
   $('imCap').textContent = 'máx. ' + mx;
+  $('imRango').textContent = JUEGOS.impostor.minJug + ' – ' + JUEGOS.impostor.maxJug;
   const pool = c.cat === 'Aleatoria' ? Object.values(WORDS).flat().length : WORDS[c.cat].length;
   $('imNote').innerHTML = '<b>' + (c.players - c.impostors) + '</b> saben la palabra, <b>' + c.impostors +
     '</b> no. Se sortea entre <b>' + pool + ' palabras</b>' +
